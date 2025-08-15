@@ -78,6 +78,15 @@ export const addNode = (canvas: Canvas, id: string, {
 	return node;
 };
 
+
+export const getLastNode = (canvas: Canvas) => {
+	const nodesArray = Array.from(canvas.nodes.values());
+	if (nodesArray.length > 0) {
+		return nodesArray[nodesArray.length - 1];
+	}
+	return null;
+};
+
 export default class mOmE_Canva extends Plugin {
 
 	async onload() {
@@ -96,7 +105,16 @@ export default class mOmE_Canva extends Plugin {
 						const canvas = canvasView?.canvas;
 						const selection = canvas.selection;
 						
-						if (selection.size === 0) return;
+						if (selection.size === 0) {
+							const lastNode = getLastNode(canvas);
+							if (lastNode && lastNode.setColor) {
+								const nextColor = CANVAS_COLORS[currentColorIndex];
+								currentColorIndex = (currentColorIndex + 1) % CANVAS_COLORS.length;
+								lastNode.setColor(nextColor, true);
+								canvas.requestSave();
+							}
+							return;
+						}
 
 						const nextColor = CANVAS_COLORS[currentColorIndex];
 						currentColorIndex = (currentColorIndex + 1) % CANVAS_COLORS.length;
@@ -154,6 +172,17 @@ export default class mOmE_Canva extends Plugin {
 					// @ts-ignore
 					const canvas = canvasView?.canvas;
 					const selection = canvas.selection;
+
+					if (selection.size === 0) {
+							const lastNode = getLastNode(canvas);
+							if (lastNode) {
+								const nextColor = CANVAS_COLORS[currentColorIndex];
+								currentColorIndex = (currentColorIndex + 1) % CANVAS_COLORS.length;
+								lastNode.setColor("4", true);
+								canvas.requestSave();
+							}
+							return;
+						}
 					
 					selection.forEach((node: any) => {
 						if (node.setColor) {
@@ -177,6 +206,17 @@ export default class mOmE_Canva extends Plugin {
 					// @ts-ignore
 					const canvas = canvasView?.canvas;
 					const selection = canvas.selection;
+
+					if (selection.size === 0) {
+							const lastNode = getLastNode(canvas);
+							if (lastNode) {
+								const nextColor = CANVAS_COLORS[currentColorIndex];
+								currentColorIndex = (currentColorIndex + 1) % CANVAS_COLORS.length;
+								lastNode.setColor("1", true);
+								canvas.requestSave();
+							}
+							return;
+						}
 					
 					selection.forEach((node: any) => {
 						if (node.setColor) {
@@ -200,6 +240,17 @@ export default class mOmE_Canva extends Plugin {
 					// @ts-ignore
 					const canvas = canvasView?.canvas;
 					const selection = canvas.selection;
+
+					if (selection.size === 0) {
+							const lastNode = getLastNode(canvas);
+							if (lastNode) {
+								const nextColor = CANVAS_COLORS[currentColorIndex];
+								currentColorIndex = (currentColorIndex + 1) % CANVAS_COLORS.length;
+								lastNode.setColor("2", true);
+								canvas.requestSave();
+							}
+							return;
+						}
 					
 					selection.forEach((node: any) => {
 						if (node.setColor) {
@@ -223,6 +274,17 @@ export default class mOmE_Canva extends Plugin {
 					// @ts-ignore
 					const canvas = canvasView?.canvas;
 					const selection = canvas.selection;
+
+					if (selection.size === 0) {
+							const lastNode = getLastNode(canvas);
+							if (lastNode) {
+								const nextColor = CANVAS_COLORS[currentColorIndex];
+								currentColorIndex = (currentColorIndex + 1) % CANVAS_COLORS.length;
+								lastNode.setColor("3", true);
+								canvas.requestSave();
+							}
+							return;
+						}
 					
 					selection.forEach((node: any) => {
 						if (node.setColor) {
@@ -247,6 +309,17 @@ export default class mOmE_Canva extends Plugin {
 					// @ts-ignore
 					const canvas = canvasView?.canvas;
 					const selection = canvas.selection;
+
+					if (selection.size === 0) {
+							const lastNode = getLastNode(canvas);
+							if (lastNode) {
+								const nextColor = CANVAS_COLORS[currentColorIndex];
+								currentColorIndex = (currentColorIndex + 1) % CANVAS_COLORS.length;
+								lastNode.setColor("5", true);
+								canvas.requestSave();
+							}
+							return;
+						}
 					
 					selection.forEach((node: any) => {
 						if (node.setColor) {
@@ -271,6 +344,17 @@ export default class mOmE_Canva extends Plugin {
 					// @ts-ignore
 					const canvas = canvasView?.canvas;
 					const selection = canvas.selection;
+
+					if (selection.size === 0) {
+							const lastNode = getLastNode(canvas);
+							if (lastNode) {
+								const nextColor = CANVAS_COLORS[currentColorIndex];
+								currentColorIndex = (currentColorIndex + 1) % CANVAS_COLORS.length;
+								lastNode.setColor("6", true);
+								canvas.requestSave();
+							}
+							return;
+						}
 					
 					selection.forEach((node: any) => {
 						if (node.setColor) {
@@ -347,19 +431,13 @@ private createNewCanvasNode(): void {
     let x = 0;
     let y = 0;
 
-    // Filter nodes that have x, y, and width defined
-    const validNodes = Array.from(canvas.nodes.values()).filter(
-        (n: any) =>
-            typeof n.x === 'number' &&
-            typeof n.y === 'number' &&
-            typeof n.width === 'number'
-    );
-
-    if (validNodes.length > 0) {
-        const lastNode = validNodes[validNodes.length - 1];
-        x = lastNode.x + lastNode.width + 50; // 50px gap
-        y = lastNode.y;
-    }
+	// Position the new node relative to the last node (if any)
+	const nodesArray = Array.from(canvas.nodes.values());
+	if (nodesArray.length > 0) {
+		const lastNode = nodesArray[nodesArray.length - 1];
+		x = lastNode.x + lastNode.width + 50; // 50px gap
+		y = lastNode.y;
+	}
 
     // Generate a unique ID for the new node
     const id = crypto.randomUUID();
