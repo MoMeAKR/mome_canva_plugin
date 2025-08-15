@@ -1,4 +1,6 @@
-import { Plugin, ItemView, Notice } from 'obsidian';
+import { Plugin, ItemView, Notice, TFile } from "obsidian";
+import { Canvas, CanvasNodeData, CanvasData, CanvasTextData, CanvasFileData} from "obsidian/canvas";
+
 
 
 const apiUrl = 'http://localhost:8000/LaToile';
@@ -13,9 +15,74 @@ const CANVAS_COLORS = [
 
 let currentColorIndex = 0;
 
+export const random = (length: number) => {
+    let str = "";
+    for (let i = 0; i < length; i++) {
+        str += (16 * Math.random() | 0).toString(16);
+    }
+    return str;
+};
+
+
+
+export const addNode = (canvas: Canvas, id: string, {
+	x,
+	y,
+	width,
+	height,
+	type,
+	content,
+	subpath,
+}: {
+	x: number,
+	y: number,
+	width: number,
+	height: number,
+	type: 'text' | 'file',
+	content: string,
+	subpath?: string,
+}) => {
+	if (!canvas) return;
+
+	const data = canvas.getData();
+	if (!data) return;
+
+	const node: Partial<CanvasTextData | CanvasFileData> = {
+		"id": id,
+		"x": x,
+		"y": y,
+		"width": width,
+		"height": height,
+		"type": type,
+	};
+
+	switch (type) {
+		case 'text':
+			node.text = content;
+			break;
+		case 'file':
+			node.file = content;
+			if (subpath) node.subpath = subpath;
+			break;
+	}
+
+	canvas.importData(<CanvasData>{
+		"nodes": [
+			...data.nodes,
+			node],
+		"edges": data.edges,
+	});
+
+	canvas.requestFrame();
+
+	return node;
+};
+
 export default class mOmE_Canva extends Plugin {
 
 	async onload() {
+		console.log("=== mOmE_Canva plugin loaded ===");
+
 		// Cycle through canvas node colors
 		this.addCommand({
 			id: 'cycle-canvas-node-color',
@@ -218,6 +285,33 @@ export default class mOmE_Canva extends Plugin {
 		}
 	});
 
+
+	this.addCommand({
+		id: 'open-canva-node',
+		name: 'Opens canva node at screen center',
+		checkCallback: (checking: boolean) => {
+			const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
+			if (canvasView?.getViewType() === "canvas") {
+				if (!checking) {
+					// @ts-ignore
+					const canvas = canvasView?.canvas;
+					const selection = canvas.selection;
+					
+					selection.forEach((node: any) => {
+						if (node.setColor) {
+							node.setColor('6', true); // Purple
+						}
+					});
+					canvas.requestSave();
+				}
+				return true;
+			}
+			return false;
+		}
+	});
+
+	
+
 	this.addCommand({
 			id: 'execute_LaToile',
 			name: 'Execute LaToile on current canva',
@@ -225,7 +319,84 @@ export default class mOmE_Canva extends Plugin {
 				await this.sendCanvasPath();
 			}
 		});
+
+	this.addCommand({
+			id: 'create-new-canva-node',
+			name: 'Create-new-canva-node',
+			hotkeys: [{ modifiers: ['Mod'], key: 'h' }],
+			callback: async () => {
+				this.createNewCanvasNode();
+			}
+		});
+
 	}
+
+private createNewCanvasNode(): void {
+    const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
+    if (!canvasView || canvasView.getViewType() !== "canvas") {
+        new Notice('Not in a canvas view');
+        return;
+    }
+
+    // @ts-ignore
+    const canvas: Canvas = canvasView.canvas;
+
+    const nodeWidth = 300;
+    const nodeHeight = 200;
+
+    let x = 0;
+    let y = 0;
+
+    // Filter nodes that have x, y, and width defined
+    const validNodes = Array.from(canvas.nodes.values()).filter(
+        (n: any) =>
+            typeof n.x === 'number' &&
+            typeof n.y === 'number' &&
+            typeof n.width === 'number'
+    );
+
+    if (validNodes.length > 0) {
+        const lastNode = validNodes[validNodes.length - 1];
+        x = lastNode.x + lastNode.width + 50; // 50px gap
+        y = lastNode.y;
+    }
+
+    // Generate a unique ID for the new node
+    const id = crypto.randomUUID();
+
+    // Add the node using your addNode function
+    addNode(canvas, id, {
+        x,
+        y,
+        width: nodeWidth,
+        height: nodeHeight,
+        type: 'text',
+        content: 'New Node',
+    });
+
+    // Retrieve the actual node from the canvas
+    // @ts-ignore
+    const actualNode = Array.from(canvas.nodes.values()).find(n => n.id === id);
+
+    if (!actualNode) {
+        new Notice("Failed to create node");
+        console.error("Could not find node after adding:", id);
+        return;
+    }
+
+    // Select and zoom to the new node
+    canvas.selection.clear();
+    canvas.selection.add(actualNode);
+    canvas.zoomToSelection();
+
+    // Start editing
+    requestAnimationFrame(() => actualNode.startEditing());
+
+    canvas.requestSave();
+    new Notice('New node created!');
+    console.log("Created new node:", actualNode);
+}
+
 
 	private async sendCanvasPath(): Promise<void> {
 		const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
