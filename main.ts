@@ -169,33 +169,14 @@ export default class mOmE_Canva extends Plugin {
 			const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
 			if (canvasView?.getViewType() === "canvas") {
 				if (!checking) {
-					// @ts-ignore
-					const canvas = canvasView?.canvas;
-					const selection = canvas.selection;
-
-					if (selection.size === 0) {
-							const lastNode = getLastNode(canvas);
-							if (lastNode) {
-								const nextColor = CANVAS_COLORS[currentColorIndex];
-								currentColorIndex = (currentColorIndex + 1) % CANVAS_COLORS.length;
-								lastNode.setColor("4", true);
-								canvas.requestSave();
-							}
-							return;
-						}
-					
-					selection.forEach((node: any) => {
-						if (node.setColor) {
-							node.setColor('4', true); // Green
-						}
-					});
-					canvas.requestSave();
+					this.setCanvasNodeColor(canvasView, "4"); // green
 				}
 				return true;
 			}
 			return false;
 		}
 	});
+
 	this.addCommand({
 		id: 'set-canvas-node-red',
 		name: 'Selected canvas node color to red',
@@ -203,33 +184,14 @@ export default class mOmE_Canva extends Plugin {
 			const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
 			if (canvasView?.getViewType() === "canvas") {
 				if (!checking) {
-					// @ts-ignore
-					const canvas = canvasView?.canvas;
-					const selection = canvas.selection;
-
-					if (selection.size === 0) {
-							const lastNode = getLastNode(canvas);
-							if (lastNode) {
-								const nextColor = CANVAS_COLORS[currentColorIndex];
-								currentColorIndex = (currentColorIndex + 1) % CANVAS_COLORS.length;
-								lastNode.setColor("1", true);
-								canvas.requestSave();
-							}
-							return;
-						}
-					
-					selection.forEach((node: any) => {
-						if (node.setColor) {
-							node.setColor('1', true); // Red
-						}
-					});
-					canvas.requestSave();
+					this.setCanvasNodeColor(canvasView, "1"); // Red
 				}
 				return true;
 			}
 			return false;
 		}
 	});
+	
 	this.addCommand({
 		id: 'set-canvas-node-orange',
 		name: 'Selected canvas node color to orange',
@@ -237,33 +199,15 @@ export default class mOmE_Canva extends Plugin {
 			const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
 			if (canvasView?.getViewType() === "canvas") {
 				if (!checking) {
-					// @ts-ignore
-					const canvas = canvasView?.canvas;
-					const selection = canvas.selection;
-
-					if (selection.size === 0) {
-							const lastNode = getLastNode(canvas);
-							if (lastNode) {
-								const nextColor = CANVAS_COLORS[currentColorIndex];
-								currentColorIndex = (currentColorIndex + 1) % CANVAS_COLORS.length;
-								lastNode.setColor("2", true);
-								canvas.requestSave();
-							}
-							return;
-						}
-					
-					selection.forEach((node: any) => {
-						if (node.setColor) {
-							node.setColor('2', true); // Orange
-						}
-					});
-					canvas.requestSave();
+					this.setCanvasNodeColor(canvasView, "2"); // Orange
 				}
 				return true;
 			}
 			return false;
 		}
 	});
+
+
 	this.addCommand({
 		id: 'set-canvas-node-yellow',
 		name: 'Selected canvas node color to yellow',
@@ -271,27 +215,7 @@ export default class mOmE_Canva extends Plugin {
 			const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
 			if (canvasView?.getViewType() === "canvas") {
 				if (!checking) {
-					// @ts-ignore
-					const canvas = canvasView?.canvas;
-					const selection = canvas.selection;
-
-					if (selection.size === 0) {
-							const lastNode = getLastNode(canvas);
-							if (lastNode) {
-								const nextColor = CANVAS_COLORS[currentColorIndex];
-								currentColorIndex = (currentColorIndex + 1) % CANVAS_COLORS.length;
-								lastNode.setColor("3", true);
-								canvas.requestSave();
-							}
-							return;
-						}
-					
-					selection.forEach((node: any) => {
-						if (node.setColor) {
-							node.setColor('3', true); // yellow
-						}
-					});
-					canvas.requestSave();
+					this.setCanvasNodeColor(canvasView, "3"); // Yellow
 				}
 				return true;
 			}
@@ -306,34 +230,13 @@ export default class mOmE_Canva extends Plugin {
 			const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
 			if (canvasView?.getViewType() === "canvas") {
 				if (!checking) {
-					// @ts-ignore
-					const canvas = canvasView?.canvas;
-					const selection = canvas.selection;
-
-					if (selection.size === 0) {
-							const lastNode = getLastNode(canvas);
-							if (lastNode) {
-								const nextColor = CANVAS_COLORS[currentColorIndex];
-								currentColorIndex = (currentColorIndex + 1) % CANVAS_COLORS.length;
-								lastNode.setColor("5", true);
-								canvas.requestSave();
-							}
-							return;
-						}
-					
-					selection.forEach((node: any) => {
-						if (node.setColor) {
-							node.setColor('5', true); // Cyan
-						}
-					});
-					canvas.requestSave();
+					this.setCanvasNodeColor(canvasView, "5"); // Cyan
 				}
 				return true;
 			}
 			return false;
 		}
 	});
-
 	this.addCommand({
 		id: 'set-canvas-node-purple',
 		name: 'Selected canvas node color to purple',
@@ -341,27 +244,7 @@ export default class mOmE_Canva extends Plugin {
 			const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
 			if (canvasView?.getViewType() === "canvas") {
 				if (!checking) {
-					// @ts-ignore
-					const canvas = canvasView?.canvas;
-					const selection = canvas.selection;
-
-					if (selection.size === 0) {
-							const lastNode = getLastNode(canvas);
-							if (lastNode) {
-								const nextColor = CANVAS_COLORS[currentColorIndex];
-								currentColorIndex = (currentColorIndex + 1) % CANVAS_COLORS.length;
-								lastNode.setColor("6", true);
-								canvas.requestSave();
-							}
-							return;
-						}
-					
-					selection.forEach((node: any) => {
-						if (node.setColor) {
-							node.setColor('6', true); // Purple
-						}
-					});
-					canvas.requestSave();
+					this.setCanvasNodeColor(canvasView, "6"); // Purple
 				}
 				return true;
 			}
@@ -394,7 +277,33 @@ export default class mOmE_Canva extends Plugin {
 		}
 	});
 
-	
+	this.addCommand({
+		id: "execute_heuristic", 
+		name: "Current selection (or last) node to orange and execution", 
+		callback: async () => {
+			console.log("hello")
+			const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
+			if (canvasView?.getViewType() === "canvas") {
+				this.setCanvasNodeColor(canvasView, "2"); // Orange
+				await new Promise(resolve => setTimeout(resolve, 2000));
+				await this.sendCanvasPath();
+			}
+		}
+	});
+
+	this.addCommand({
+		id: "execute_tool", 
+		name: "Current selection (or last) node to red and execution", 
+		callback: async () => {
+			console.log("hello")
+			const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
+			if (canvasView?.getViewType() === "canvas") {
+				this.setCanvasNodeColor(canvasView, "1"); // Orange
+				await new Promise(resolve => setTimeout(resolve, 2000));
+				await this.sendCanvasPath();
+			}
+		}
+	});
 
 	this.addCommand({
 			id: 'execute_LaToile',
@@ -414,6 +323,34 @@ export default class mOmE_Canva extends Plugin {
 		});
 
 	}
+
+private setCanvasNodeColor(
+		canvasView: ItemView | null,
+		colorId: string
+	): void {
+		if (!canvasView || canvasView.getViewType() !== "canvas") return;
+
+		// @ts-ignore
+		const canvas = canvasView.canvas;
+		const selection = canvas.selection;
+
+		if (selection.size === 0) {
+			const lastNode = getLastNode(canvas); 
+			if (lastNode && lastNode.setColor) {
+				lastNode.setColor(colorId, true);
+				canvas.requestSave();
+			}
+			return;
+		}
+
+		selection.forEach((node: any) => {
+			if (node.setColor) {
+				node.setColor(colorId, true);
+			}
+		});
+		canvas.requestSave();
+	}
+
 
 private createNewCanvasNode(): void {
     const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
