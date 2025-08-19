@@ -1,5 +1,7 @@
+// //check syntax here https://github.com/Quorafind/Obsidian-Canvas-MindMap
+
 import { Plugin, ItemView, Notice, TFile } from "obsidian";
-import { Canvas, CanvasNodeData, CanvasData, CanvasTextData, CanvasFileData} from "obsidian/canvas";
+import { Canvas, CanvasNodeData, CanvasData, CanvasTextData, CanvasFileData, CanvasNode} from "obsidian/canvas";
 
 
 
@@ -87,10 +89,93 @@ export const getLastNode = (canvas: Canvas) => {
 	return null;
 };
 
+
+const navigate = (canvas: Canvas, direction: string) => {
+    const currentSelection = canvas.selection;
+    if (currentSelection.size !== 1) return;
+
+    const selectedItem = currentSelection.values().next().value as CanvasNode;
+    const viewportNodes = canvas.getViewportNodes();
+    const { x, y, width, height } = selectedItem;
+
+    canvas.deselectAll();
+
+    // Helper: Exclude group nodes (those with a 'label' key)
+    const filterOutGroups = (node: CanvasNode) => !('label' in node);
+
+    // Center of the selected node
+    const centerX = x + width / 2;
+    const centerY = y + height / 2;
+
+    // Directional filter: only nodes in the intended direction
+    const isInDirection = (node: CanvasNode) => {
+        const nodeCenterX = node.x + node.width / 2;
+        const nodeCenterY = node.y + node.height / 2;
+        switch (direction) {
+            case "top":    return nodeCenterY < centerY;
+            case "bottom": return nodeCenterY > centerY;
+            case "left":   return nodeCenterX < centerX;
+            case "right":  return nodeCenterX > centerX;
+            default:       return false;
+        }
+    };
+
+    // Compute distance in the intended direction
+    const getDistance = (node: CanvasNode) => {
+        const nodeCenterX = node.x + node.width / 2;
+        const nodeCenterY = node.y + node.height / 2;
+        switch (direction) {
+            case "top":
+            case "bottom":
+                // Primary: vertical distance, Secondary: horizontal distance
+                return [
+                    Math.abs(nodeCenterY - centerY),
+                    Math.abs(nodeCenterX - centerX)
+                ];
+            case "left":
+            case "right":
+                // Primary: horizontal distance, Secondary: vertical distance
+                return [
+                    Math.abs(nodeCenterX - centerX),
+                    Math.abs(nodeCenterY - centerY)
+                ];
+            default:
+                return [Infinity, Infinity];
+        }
+    };
+
+    // Filter out group nodes and nodes not in the intended direction
+    const candidates = viewportNodes
+        .filter(filterOutGroups)
+        .filter(isInDirection);
+
+    // Sort by primary axis distance, then by secondary axis distance
+    candidates.sort((a, b) => {
+        const [aPrimary, aSecondary] = getDistance(a);
+        const [bPrimary, bSecondary] = getDistance(b);
+        if (aPrimary !== bPrimary) return aPrimary - bPrimary;
+        return aSecondary - bSecondary;
+    });
+
+    const nextNode = candidates[0];
+
+    if (nextNode) {
+        canvas.selectOnly(nextNode);
+        // canvas.zoomToSelection();
+    }
+
+    return nextNode;
+};
+
+
+
 export default class mOmE_Canva extends Plugin {
 
 	async onload() {
 		console.log("=== mOmE_Canva plugin loaded ===");
+
+		// Adding navigation commands 
+		this.AddNavCommands(); 
 
 		// Cycle through canvas node colors
 		this.addCommand({
@@ -322,7 +407,108 @@ export default class mOmE_Canva extends Plugin {
 			}
 		});
 
+	this.addCommand({
+            id: 'm0me-start-editing',
+            name: 'Start editing selected node',
+            hotkeys: [{ modifiers: ['Mod'], key: 'E' }],
+            checkCallback: (checking: boolean) => {
+                const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
+                if (canvasView?.getViewType() === "canvas") {
+                    if (!checking) {
+                        // @ts-ignore
+                        const canvas = canvasView?.canvas;
+                        const selection = canvas.selection;
+                        if (selection.size === 1) {
+                            const node = selection.values().next().value;
+                            if (!node.isEditing) {
+                                node.startEditing();
+                            }
+                        }
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
+
 	}
+AddNavCommands(){
+	// UP
+	this.addCommand({
+		id: 'm0me-navigate-up',
+		name: 'Navigate to node above',
+		hotkeys: [{ modifiers: ['Alt'], key: 'ArrowUp' }],
+		checkCallback: (checking: boolean) => {
+			const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
+			if (canvasView?.getViewType() === "canvas") {
+				if (!checking) {
+					// @ts-ignore
+					const canvas = canvasView?.canvas;
+					navigate(canvas, "top");
+				}
+				return true;
+			}
+			return false;
+		}
+	});
+
+	// LEFT
+    this.addCommand({
+		id: 'm0me-navigate-down',
+		name: 'Navigate to node below',
+		hotkeys: [{ modifiers: ['Alt'], key: 'ArrowDown' }],
+		checkCallback: (checking: boolean) => {
+			const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
+			if (canvasView?.getViewType() === "canvas") {
+				if (!checking) {
+					// @ts-ignore
+					const canvas = canvasView?.canvas;
+					navigate(canvas, "bottom");
+				}
+				return true;
+			}
+			return false;
+		}
+	});
+
+	// LEFT
+        this.addCommand({
+            id: 'm0me-navigate-left',
+            name: 'Navigate to node on the left',
+            hotkeys: [{ modifiers: ['Alt'], key: 'ArrowLeft' }],
+            checkCallback: (checking: boolean) => {
+                const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
+                if (canvasView?.getViewType() === "canvas") {
+                    if (!checking) {
+                        // @ts-ignore
+                        const canvas = canvasView?.canvas;
+                        navigate(canvas, "left");
+                    }
+                    return true;
+                }
+                return false;
+            }
+    });
+	// RIGHT
+	this.addCommand({
+		id: 'm0me-navigate-right',
+		name: 'Navigate to node on the right',
+		hotkeys: [{ modifiers: ['Alt'], key: 'ArrowRight' }],
+		checkCallback: (checking: boolean) => {
+			const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
+			if (canvasView?.getViewType() === "canvas") {
+				if (!checking) {
+					// @ts-ignore
+					const canvas = canvasView?.canvas;
+					navigate(canvas, "right");
+				}
+				return true;
+			}
+			return false;
+		}
+	});
+}
+
 
 private setCanvasNodeColor(
 		canvasView: ItemView | null,
