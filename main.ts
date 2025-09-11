@@ -1,11 +1,13 @@
 // //check syntax here https://github.com/Quorafind/Obsidian-Canvas-MindMap
 
-import { Plugin, ItemView, Notice, TFile } from "obsidian";
+import { Plugin, ItemView, Notice, TFile, Menu } from "obsidian";
 import { Canvas, CanvasNodeData, CanvasData, CanvasTextData, CanvasFileData, CanvasNode} from "obsidian/canvas";
 
 
 
 const apiUrl = 'http://localhost:8000/LaToile';
+const apiCodeUrl = 'http://localhost:8000/cOdEaRtIsT';
+const apiCodeTools = "http://localhost:8000/cOdEaRtIsT/get_tools"
 const CANVAS_COLORS = [
 	'1', // Red
 	'2', // Orange  
@@ -150,7 +152,7 @@ const navigate = (canvas: Canvas, direction: string) => {
         .filter(isInDirection);
 
     // Sort by primary axis distance, then by secondary axis distance
-    candidates.sort((a, b) => {
+    candidates.sort((a: any, b: any) => {
         const [aPrimary, aSecondary] = getDistance(a);
         const [bPrimary, bSecondary] = getDistance(b);
         if (aPrimary !== bPrimary) return aPrimary - bPrimary;
@@ -167,6 +169,18 @@ const navigate = (canvas: Canvas, direction: string) => {
     return nextNode;
 };
 
+async function copyNodeIdToClipboard(node: CanvasNode): Promise<void> {
+    const id = node.id;
+    if (!id) {
+        console.warn("Node does not have an id.");
+        return;
+    }
+
+    await navigator.clipboard.writeText(id);
+	new Notice(`Copied node id to clipboard: ${id}`);
+}
+
+
 
 
 export default class mOmE_Canva extends Plugin {
@@ -174,8 +188,46 @@ export default class mOmE_Canva extends Plugin {
 	async onload() {
 		console.log("=== mOmE_Canva plugin loaded ===");
 
+		this.addRibbonIcon("bolt", "Execute LaToile", async () => {
+            await this.sendCanvasPath();
+        });
+
+		this.addRibbonIcon("bomb", "CodeArtist", async () => {
+			await this.SendCanvasToCodeArtist();
+		});
+
+		this.addRibbonIcon("box", "CodeArtist Tools", async (evt: MouseEvent) => {
+			await this.openCodeArtistMenu(evt);
+		});
+
+
+	
+
 		// Adding navigation commands 
 		this.AddNavCommands(); 
+
+		// Node to clipboard
+		this.addCommand({
+            id: 'm0me-copy-node-id',
+            name: 'Copy selected node ID to clipboard',
+            hotkeys: [{ modifiers: ['Alt'], key: 'c' }],
+            checkCallback: (checking: boolean) => {
+                const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
+                if (canvasView?.getViewType() === "canvas") {
+                    if (!checking) {
+                        // @ts-ignore
+                        const canvas = canvasView?.canvas;
+                        const selection = canvas.selection;
+                        if (selection.size === 1) {
+                            const node = selection.values().next().value;
+                            copyNodeIdToClipboard(node);
+                        }
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
 
 		// Cycle through canvas node colors
 		this.addCommand({
@@ -191,7 +243,7 @@ export default class mOmE_Canva extends Plugin {
 						const selection = canvas.selection;
 						
 						if (selection.size === 0) {
-							const lastNode = getLastNode(canvas);
+							const lastNode = getLastNode(canvas) as any;
 							if (lastNode && lastNode.setColor) {
 								const nextColor = CANVAS_COLORS[currentColorIndex];
 								currentColorIndex = (currentColorIndex + 1) % CANVAS_COLORS.length;
@@ -363,6 +415,15 @@ export default class mOmE_Canva extends Plugin {
 	});
 
 	this.addCommand({
+			id: 'execute_cOdEaRtIsT',
+			name: 'CodeArtist graph computation ',
+			callback: async () => {
+				await this.SendCanvasToCodeArtist();
+			}
+		});
+
+
+	this.addCommand({
 		id: "execute_heuristic", 
 		name: "Current selection (or last) node to orange and execution", 
 		callback: async () => {
@@ -509,6 +570,38 @@ AddNavCommands(){
 	});
 }
 
+private async openCodeArtistMenu(evt: MouseEvent) {
+        console.log("[CodeArtist] Fetching menu items...");
+
+        // Fetch items from your API
+        let items: { title: string; content: string }[] = [];
+        try {
+            const response = await fetch(apiCodeTools);
+			console.log(response);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            items = await response.json(); // expected: [{title, content}, ...]
+            console.log("[mOmE] menu items fetched:", items);
+        } catch (error) {
+            console.error("[mOmE] Failed to fetch menu items:", error);
+            new Notice("Failed to fetch menu items");
+            return;
+        }
+
+        // Build menu dynamically
+        const menu = new Menu();
+        items.forEach((itemData) => {
+            menu.addItem((item) => {
+                item.setTitle(itemData.title);
+                item.onClick(() => {
+                    console.log(`[mOmE] Menu item clicked: ${itemData.title}`);
+                    this.createNewToolCanvasNode(itemData.content);
+                });
+            });
+        });
+
+        menu.showAtMouseEvent(evt);
+    }
+
 
 private setCanvasNodeColor(
 		canvasView: ItemView | null,
@@ -521,7 +614,7 @@ private setCanvasNodeColor(
 		const selection = canvas.selection;
 
 		if (selection.size === 0) {
-			const lastNode = getLastNode(canvas); 
+			const lastNode = getLastNode(canvas) as any; 
 			if (lastNode && lastNode.setColor) {
 				lastNode.setColor(colorId, true);
 				canvas.requestSave();
@@ -536,6 +629,57 @@ private setCanvasNodeColor(
 		});
 		canvas.requestSave();
 	}
+
+
+
+
+
+private createNewToolCanvasNode(content: string): void {
+    const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
+    if (!canvasView || canvasView.getViewType() !== "canvas") {
+        new Notice("Not in a canvas view");
+        return;
+    }
+
+    // @ts-ignore
+    const canvas: Canvas = canvasView.canvas;
+
+    const nodeWidth = 300;
+    const nodeHeight = 200;
+
+    // Compute center of the visible canvas viewport
+    const x = canvas.x + canvas.canvasRect.width / 2 - nodeWidth / 2;
+    const y = canvas.y + canvas.canvasRect.height / 2 - nodeHeight / 2;
+
+    const id = crypto.randomUUID();
+
+    // @ts-ignore
+    addNode(canvas, id, {
+        x,
+        y,
+        width: nodeWidth,
+        height: nodeHeight,
+        type: "text",
+        content,
+    });
+
+    // Retrieve actual node
+    // @ts-ignore
+    const actualNode = Array.from(canvas.nodes.values()).find((n) => n.id === id);
+    if (!actualNode) {
+        new Notice("Failed to create node");
+        console.error("Could not find node after adding:", id);
+        return;
+    }
+
+    // Start editing immediately
+    requestAnimationFrame(() => (actualNode as any).startEditing());
+    canvas.requestSave();
+    new Notice("New node created at viewport center!");
+    console.log("Created new node:", actualNode);
+}
+
+
 
 
 private createNewCanvasNode(): void {
@@ -555,7 +699,7 @@ private createNewCanvasNode(): void {
     let y = 0;
 
 	// Position the new node relative to the last node (if any)
-	const nodesArray = Array.from(canvas.nodes.values());
+	const nodesArray = Array.from(canvas.nodes.values()) as any;
 	if (nodesArray.length > 0) {
 		const lastNode = nodesArray[nodesArray.length - 1];
 		x = lastNode.x + lastNode.width + 50; // 50px gap
@@ -591,7 +735,8 @@ private createNewCanvasNode(): void {
     canvas.zoomToSelection();
 
     // Start editing
-    requestAnimationFrame(() => actualNode.startEditing());
+    // requestAnimationFrame(() => actualNode.startEditing());
+	requestAnimationFrame(() => (actualNode as any).startEditing());
 
     canvas.requestSave();
     new Notice('New node created!');
@@ -613,7 +758,7 @@ private createNewCanvasNode(): void {
 			return;
 		}
 
-		const canvasPath = this.app.vault.adapter.getFullPath(canvasFile.path);
+		const canvasPath = (this.app.vault.adapter as any).getFullPath(canvasFile.path);
 		
 		try {
 			
@@ -624,6 +769,60 @@ private createNewCanvasNode(): void {
 				},
 				body: JSON.stringify({ 
 					canvas_path: canvasPath 
+				})
+			});
+
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+
+			const result = await response.json();
+			new Notice(`Python response: ${result.message}`);
+			
+		} catch (error) {
+			new Notice(canvasPath);
+			console.error('Error:', error);
+		}
+
+	}
+
+
+	private async SendCanvasToCodeArtist(): Promise<void> {
+    const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
+
+		// Ensure it’s a canvas
+		if (canvasView?.getViewType() !== "canvas") {
+			new Notice('Not in a canvas view');
+			return;
+		}
+
+		// File exists (TS-safe)
+		// Use 'as any' since TS doesn't know canvasView.file
+		const canvasFile = (canvasView as any)?.file;
+		if (!canvasFile) {
+			new Notice('No canvas file found');
+			return;
+		}
+
+		// Get full path from vault adapter (TS-safe)
+		const canvasPath = (this.app.vault.adapter as any).getFullPath(canvasFile.path);
+
+		// Access canvas instance (TS-safe)
+		const canvas = (canvasView as any)?.canvas;
+		const currentSelection_ids = Array.from(canvas.selection).map((sel: { id: string }) => sel.id);
+    
+		console.log('Current selection:', canvas.selection);
+		console.log('Selection IDs:', currentSelection_ids);
+		try {
+			
+			const response = await fetch(apiCodeUrl, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ 
+					canvas_path: canvasPath, 
+					selected_node_ids: currentSelection_ids
 				})
 			});
 
