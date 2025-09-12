@@ -7,7 +7,9 @@ import { Canvas, CanvasNodeData, CanvasData, CanvasTextData, CanvasFileData, Can
 
 const apiUrl = 'http://localhost:8000/LaToile';
 const apiCodeUrl = 'http://localhost:8000/cOdEaRtIsT';
-const apiCodeTools = "http://localhost:8000/cOdEaRtIsT/get_tools"
+const apiCodeTools = "http://localhost:8000/cOdEaRtIsT/get_tools";
+const getToolStringContentAPI = "http://localhost:8000/cOdEaRtIsT/get_node_content";
+const LaToileToolsAPI = "http://localhost:8000/LaToile/all_tools_heuristics";
 const CANVAS_COLORS = [
 	'1', // Red
 	'2', // Orange  
@@ -192,7 +194,7 @@ export default class mOmE_Canva extends Plugin {
             await this.sendCanvasPath();
         });
 
-		this.addRibbonIcon("bomb", "CodeArtist", async () => {
+		this.addRibbonIcon("bomb", "CodeArtist Exec", async () => {
 			await this.SendCanvasToCodeArtist();
 		});
 
@@ -200,8 +202,32 @@ export default class mOmE_Canva extends Plugin {
 			await this.openCodeArtistMenu(evt);
 		});
 
+		this.addRibbonIcon("wand", "Transform tool node (codeartist)", async () => {
+			await this.updateCodeToolFromString();
+		});
 
+		this.addRibbonIcon("book", "LaToile Tools", async (evt: MouseEvent) => {
+			await this.openLaToileTools(evt);
+		});
+
+
+		this.addCommand({
+			id: 'update-codeartist-tool-from-string',
+			name: 'CodeArtist Tool Transform',
+			// hotkeys: [{ modifiers: ['Mod'], key: 'T' }],
+			checkCallback: (checking: boolean) => {
+				const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
+				if (canvasView?.getViewType() === "canvas") {
+					if (!checking) {
+						this.updateCodeToolFromString();
+					}
+					return true;
+				}
+				return false;
+			}
+		});
 	
+
 
 		// Adding navigation commands 
 		this.AddNavCommands(); 
@@ -437,6 +463,8 @@ export default class mOmE_Canva extends Plugin {
 		}
 	});
 
+	
+
 	this.addCommand({
 		id: "execute_tool", 
 		name: "Current selection (or last) node to red and execution", 
@@ -570,6 +598,50 @@ AddNavCommands(){
 	});
 }
 
+// a function that is activated by the command, targetting the currently selected node. Sends content to API (/cOdEaRtIsT/get_node_content), receives contents to include in the node 
+private async updateCodeToolFromString(): Promise<void> {
+	const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
+	if (!canvasView || canvasView.getViewType() !== "canvas") {
+		new Notice("Not in a canvas view");
+		return;
+	}
+
+	// @ts-ignore
+	const canvas: Canvas = canvasView.canvas;
+	const selection = canvas.selection;
+
+	if (selection.size !== 1) {
+		new Notice("Please select a single node");
+		return;
+	}
+
+	const node = selection.values().next().value;
+	let nodeContent = node.text?.trim();
+	
+	try {
+		const response = await fetch(getToolStringContentAPI, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ target: nodeContent })
+		});
+
+		if (!response.ok) {
+			throw new Error(`HTTP error! status: ${response.status}`);
+		}
+
+		const result = await response.json();
+		
+		node.text = result.content; 
+		canvas.requestFrame(); // Automated refresh after updating node content
+		canvas.requestSave();
+		new Notice("Node content updated from API.");
+	} catch (error) {
+		console.error("Failed to update node content:", error);
+		new Notice("Failed to update node content.");
+	}
+}
+
+
 private async openCodeArtistMenu(evt: MouseEvent) {
         console.log("[CodeArtist] Fetching menu items...");
 
@@ -601,6 +673,79 @@ private async openCodeArtistMenu(evt: MouseEvent) {
 
         menu.showAtMouseEvent(evt);
     }
+
+	
+private async openLaToileTools(evt?: MouseEvent) {
+    console.log("[LaToile] Fetching tools and heuristics...");
+
+    // Ensure we're in a canvas view
+    const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
+    if (canvasView?.getViewType() !== "canvas") {
+        new Notice('Not in a canvas view');
+        return;
+    }
+
+    // @ts-ignore
+    const canvasFile = canvasView?.file;
+    if (!canvasFile) {
+        new Notice('No canvas file found');
+        return;
+    }
+
+    // Get the full path to the canvas file
+    const dataPath = (this.app.vault.adapter as any).getFullPath(canvasFile.path);
+    
+
+    let items: { title: string; content: string }[] = [];
+    try {
+        // Use POST with JSON body
+        const response = await fetch(LaToileToolsAPI, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ canvas_path: dataPath })
+        });
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+
+        // Combine heuristics and tools into a single list for the menu
+        items = (data.tools || []).map((t: any) => ({
+            title: t.name,
+            content: t.desc
+        }));
+        console.log("[LaToile] Menu items fetched:", items);
+    } catch (error) {
+        console.error("[LaToile] Failed to fetch tools/heuristics:", error);
+        new Notice("Failed to fetch LaToile tools/heuristics");
+        return;
+    }
+
+    // Build and show the menu
+    const menu = new Menu();
+    items.forEach((itemData) => {
+        menu.addItem((item) => {
+            item.setTitle(itemData.title);
+            item.onClick(async () => {
+                console.log(`[LaToile] Menu item clicked: ${itemData.title}`);
+                this.createNewToolCanvasNode(itemData.title);
+                this.setCanvasNodeColor(canvasView, "6"); // Purple
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                await this.sendCanvasPath();
+            });
+        });
+    });
+
+    // Show menu at mouse event location if available, else at center
+	menu.showAtMouseEvent(evt);
+    // if (evt) {
+        
+    // } else {
+    //     menu.showAtPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+    // }
+}
+
+
 
 
 private setCanvasNodeColor(
@@ -644,14 +789,17 @@ private createNewToolCanvasNode(content: string): void {
     // @ts-ignore
     const canvas: Canvas = canvasView.canvas;
 
-    const nodeWidth = 300;
-    const nodeHeight = 200;
+    const nodeWidth = 450;
+    const nodeHeight = 250;
 
     // Compute center of the visible canvas viewport
-    const x = canvas.x + canvas.canvasRect.width / 2 - nodeWidth / 2;
-    const y = canvas.y + canvas.canvasRect.height / 2 - nodeHeight / 2;
+    // const x = canvas.x + canvas.canvasRect.width / 2 - nodeWidth / 2;
+    // const y = canvas.y + canvas.canvasRect.height / 2 - nodeHeight / 2;
+	const x = canvas.x - nodeWidth / 2;
+	const y = canvas.y - nodeHeight / 2;
 
-    const id = crypto.randomUUID();
+
+	const id = crypto.randomUUID();
 
     // @ts-ignore
     addNode(canvas, id, {
