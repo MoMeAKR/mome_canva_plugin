@@ -2,7 +2,7 @@
 
 import { Plugin, ItemView, Notice, TFile, Menu } from "obsidian";
 import { Canvas, CanvasNodeData, CanvasData, CanvasTextData, CanvasFileData, CanvasNode} from "obsidian/canvas";
-
+import { openHeuristicSelector } from './heuristic-modal';
 
 
 const apiUrl = 'http://localhost:8000/LaToile';
@@ -208,6 +208,31 @@ export default class mOmE_Canva extends Plugin {
 
 		this.addRibbonIcon("book", "LaToile Tools", async (evt: MouseEvent) => {
 			await this.openLaToileTools(evt);
+		});
+
+		this.addCommand({
+			id: 'open-mome-heuristics',
+			name: 'Open Heuristic Function',
+			checkCallback: (checking: boolean) => {
+				const canvasView = this.app.workspace.getActiveViewOfType(ItemView);
+				if (canvasView?.getViewType() === "canvas") {
+					if (!checking) {
+						const canvasFile= canvasView?.file; 
+						const dataPath = (this.app.vault.adapter as any).getFullPath(canvasFile.path); 
+						openHeuristicSelector(dataPath, this.app, (heuristic, args) => {
+							// Execute the heuristic with the provided arguments
+							const argNames = heuristic.arguments.map(argObj => Object.keys(argObj)[0]);
+							const argValues = argNames.map(name => args[name] ?? "");
+							const nodeContent = [heuristic.name, ...argValues].join(" | ");
+							// // Call your API or execute the heuristic here
+							this.createNewToolCanvasNode(nodeContent);
+							this.setCanvasNodeColor(canvasView, "2"); // Orange (for heuristics)
+						});
+					}
+					return true;
+				}
+				return false;
+			}
 		});
 
 
@@ -619,10 +644,19 @@ private async updateCodeToolFromString(): Promise<void> {
 	let nodeContent = node.text?.trim();
 	
 	try {
+		const canvasFile = (canvasView as any)?.file;
+		const canvasPath = canvasFile ? (this.app.vault.adapter as any).getFullPath(canvasFile.path) : undefined;
+
+		console.log(canvasPath); 
+
 		const response = await fetch(getToolStringContentAPI, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ target: nodeContent })
+			body: JSON.stringify({ 
+				target: nodeContent, 
+				node_id: node.id,
+				canvas_path: canvasPath
+			})
 		});
 
 		if (!response.ok) {
@@ -631,9 +665,9 @@ private async updateCodeToolFromString(): Promise<void> {
 
 		const result = await response.json();
 		
-		node.text = result.content; 
-		canvas.requestFrame(); // Automated refresh after updating node content
-		canvas.requestSave();
+		// node.text = result.content; 
+		// canvas.requestFrame(); // Automated refresh after updating node content
+		// canvas.requestSave();
 		new Notice("Node content updated from API.");
 	} catch (error) {
 		console.error("Failed to update node content:", error);
