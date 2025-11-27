@@ -1,4 +1,7 @@
 import { Plugin } from "obsidian";
+import { CanvasToolbar } from "./features/canvasToolbar"; 
+import { BusyIndicator } from "features/busy-indicator";
+
 
 export interface ToolItem {
     title: string;
@@ -25,4 +28,17 @@ export interface IMomePlugin extends Plugin {
     saveSettings(): Promise<void>;
 }
 
+
+
+// Add to your IMomePlugin interface:
+export interface IMomePlugin {
+    settings: MomePluginSettings;
+    busyIndicator: BusyIndicator;
+    app: App;
+    canvasToolbar?: CanvasToolbar; // Add this line
+    loadSettings(): Promise<void>;
+    saveSettings(): Promise<void>;
+    addCommand(command: Command): Command;
+    registerEvent(event: EventRef): void;
+}
 

@@ -36,6 +36,28 @@ export async function fetchHeuristics(plugin: IMomePlugin, ctx: CanvasContext): 
     }
 }
 
+export function extractArgNames(argDefs: any[]): string[] {
+    if (!Array.isArray(argDefs)) return [];
+    const names: string[] = [];
+
+    for (const def of argDefs) {
+        if (typeof def === "string") {
+            names.push(def);
+        } else if (def && typeof def === "object") {
+            // Format A: { name: string, type?, desc? }
+            if ("name" in def && typeof def.name === "string") {
+                names.push(def.name);
+            } else {
+                // Format B: { argName: "description" } (single key)
+                const keys = Object.keys(def);
+                if (keys.length === 1) names.push(keys[0]);
+            }
+        }
+    }
+    return names;
+}
+
+
 // Main function to orchestrate the two-step modal process
 export async function openHeuristicSelector(
     plugin: IMomePlugin, 
@@ -120,6 +142,59 @@ class HeuristicSelectorModal extends Modal {
     }
 }
 
+// class HeuristicArgumentsModal extends Modal {
+//     private heuristic: HeuristicFunction;
+//     private onSubmit: (args: Record<string, any>) => void;
+//     private args: Record<string, any> = {};
+
+//     constructor(app: App, heuristic: HeuristicFunction, onSubmit: (args: Record<string, any>) => void) {
+//         super(app);
+//         this.heuristic = heuristic;
+//         this.onSubmit = onSubmit;
+//     }
+
+//     onOpen() {
+
+//         console.log(this.heuristic)
+
+//         const { contentEl } = this;
+//         contentEl.empty();
+//         contentEl.createEl("h2", { text: `Arguments for ${this.heuristic.name}` });
+
+//         const argsContainer = contentEl.createDiv();
+
+//         this.heuristic.arguments.forEach((argObj: any) => {
+//             const argName = argObj.name || "arg";
+//             const argType = argObj.type || "str";
+            
+//             new Setting(argsContainer)
+//                 .setName(argName)
+//                 .setDesc(`Type: ${argType}`)
+//                 .addText((text) =>
+//                     text.onChange((value) => {
+//                         this.args[argName] = value;
+//                     })
+//                 );
+//         });
+
+//         new Setting(contentEl)
+//             .addButton((btn) =>
+//                 btn
+//                     .setButtonText("Execute")
+//                     .setCta()
+//                     .onClick(() => {
+//                         this.close();
+//                         this.onSubmit(this.args);
+//                     })
+//             );
+//     }
+
+//     onClose() {
+//         this.contentEl.empty();
+//     }
+// }
+
+
 class HeuristicArgumentsModal extends Modal {
     private heuristic: HeuristicFunction;
     private onSubmit: (args: Record<string, any>) => void;
@@ -132,28 +207,53 @@ class HeuristicArgumentsModal extends Modal {
     }
 
     onOpen() {
+        console.log(this.heuristic);
+
         const { contentEl } = this;
         contentEl.empty();
         contentEl.createEl("h2", { text: `Arguments for ${this.heuristic.name}` });
 
         const argsContainer = contentEl.createDiv();
 
-        this.heuristic.arguments.forEach((argObj: any) => {
-            const argName = argObj.name || "arg";
-            const argType = argObj.type || "str";
-            
-            new Setting(argsContainer)
-                .setName(argName)
-                .setDesc(`Type: ${argType}`)
-                .addText((text) =>
-                    text.onChange((value) => {
-                        this.args[argName] = value;
-                    })
-                );
-        });
+        // Normalize arguments into a common structure
+        const defs: { name: string; desc?: string; type?: string }[] = [];
+        for (const argObj of this.heuristic.arguments || []) {
+            if (argObj && typeof argObj === "object" && ("name" in argObj || "type" in argObj)) {
+                // Format: { name: string, type?: string, desc?: string }
+                const a = argObj as any;
+                defs.push({ name: a.name ?? "arg", desc: a.desc ?? "", type: a.type ?? "str" });
+            } else if (argObj && typeof argObj === "object") {
+                // Format: { argName: "description" } (as logged)
+                for (const [key, val] of Object.entries(argObj)) {
+                    defs.push({ name: key, desc: typeof val === "string" ? val : "" });
+                }
+            } else if (typeof argObj === "string") {
+                // Fallback: raw name
+                defs.push({ name: argObj, desc: "" });
+            }
+        }
+
+        if (defs.length === 0) {
+            contentEl.createEl("div", { text: "No arguments required." });
+        } else {
+            defs.forEach(def => {
+                // Initialize default empty value
+                if (this.args[def.name] === undefined) this.args[def.name] = "";
+
+                new Setting(argsContainer)
+                    .setName(def.name)
+                    .setDesc(def.desc ? `Type: ${def.type ?? "str"} — ${def.desc}` : `Type: ${def.type ?? "str"}`)
+                    .addText(text => {
+                        if (def.desc) text.setPlaceholder(def.desc);
+                        text.onChange(value => {
+                            this.args[def.name] = value;
+                        });
+                    });
+            });
+        }
 
         new Setting(contentEl)
-            .addButton((btn) =>
+            .addButton(btn =>
                 btn
                     .setButtonText("Execute")
                     .setCta()
@@ -168,3 +268,4 @@ class HeuristicArgumentsModal extends Modal {
         this.contentEl.empty();
     }
 }
+

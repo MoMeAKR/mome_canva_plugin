@@ -6,3 +6,46 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+/* Canvas Toolbar Styles */
+.mome-canvas-toolbar {
+    position: absolute;
+    display: flex;
+    gap: 4px;
+    padding: 6px;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    box-shadow: var(--shadow-s);
+    z-index: 1000;
+    pointer-events: all;
+}
+
+.mome-toolbar-button {
+    padding: 6px;
+    border-radius: 4px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease;
+}
+
+.mome-toolbar-button:hover {
+    background: var(--background-modifier-hover);
+}
+
+.mome-toolbar-button:active {
+    background: var(--background-modifier-active);
+}
+
+.mome-toolbar-button svg {
+    width: 16px;
+    height: 16px;
+    color: var(--text-muted);
+}
+
+.mome-toolbar-button:hover svg {
+    color: var(--text-normal);
+}

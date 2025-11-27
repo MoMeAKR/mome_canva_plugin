@@ -1,3 +1,4 @@
+
 import { Notice } from "obsidian";
 import { API_PATHS } from "../constants";
 import { ApiService } from "../services/api-service";
@@ -8,11 +9,22 @@ import { IMomePlugin } from "../types";
 
 export const LaToile = {
     async execute(plugin: IMomePlugin) {
+
+
         const ctx = getCanvasContext(plugin.app);
         if (!ctx) return new Notice("No canvas found");
 
+        // 1. Generate a unique ID for this operation
+        const opId = `latoile-exec-${Date.now()}`;
+
         try {
-            new Notice("LaToile: Sending context...");
+            // 2. Start the busy indicator
+            plugin.busyIndicator.start(opId, "LaToile computing...");
+
+            // (Optional) Keep this if you want a toast notification too, 
+            // but the spinner usually replaces the need for "Sending context..."
+            // new Notice("LaToile: Sending context..."); 
+
             const result = await ApiService.sendGraphContext(
                 plugin.settings.baseUrl, 
                 API_PATHS.LA_TOILE, 
@@ -23,6 +35,10 @@ export const LaToile = {
 
             if (result.updates && result.updates.length > 0) {
                 console.log(`[LaToile] Processing ${result.updates.length} operations...`);
+                
+                // Update label to show we are now applying changes
+                plugin.busyIndicator.start(opId, "Applying changes...");
+
                 let changesApplied = 0;
 
                 result.updates.forEach((u: any) => {
@@ -87,7 +103,9 @@ export const LaToile = {
                 });
 
                 if (changesApplied > 0) {
+                    // @ts-ignore
                     ctx.canvas.requestFrame();
+                    // @ts-ignore
                     ctx.canvas.requestSave();
                     new Notice(`Applied ${changesApplied} changes.`);
                 }
@@ -98,6 +116,9 @@ export const LaToile = {
         } catch (e) {
             console.error("[LaToile] Error:", e);
             new Notice("LaToile execution failed.");
+        } finally {
+            // 3. Ensure we stop the indicator regardless of success or failure
+            plugin.busyIndicator.end(opId);
         }
     },
 
@@ -105,7 +126,12 @@ export const LaToile = {
         const ctx = getCanvasContext(plugin.app);
         if (!ctx) return;
 
+        const opId = `latoile-tools-${Date.now()}`;
+
         try {
+            // Start indicator for fetching tools
+            plugin.busyIndicator.start(opId, "Fetching tools...");
+
             const response = await ApiService.getLaToileTools(
                 plugin.settings.baseUrl, 
                 API_PATHS.LA_TOILE_TOOLS, 
@@ -114,15 +140,26 @@ export const LaToile = {
             
             const items = (response.tools || []).map((t: any) => ({ title: t.name, content: t.desc }));
 
+            // We can stop the indicator here because the menu interaction is user-driven
+            plugin.busyIndicator.end(opId);
+
             showToolMenu(evt, items, async (item) => {
+                // @ts-ignore
                 createNodeAtViewportCenter(ctx.canvas, item.title);
+                // @ts-ignore
                 setCanvasNodeColor(ctx.canvas, "6"); 
+                
+                // Small visual delay
                 await new Promise(r => setTimeout(r, 2000));
+                
+                // execute() will trigger its own busy indicator
                 await LaToile.execute(plugin);
             });
         } catch (error) {
             console.error("Failed to load LaToile tools", error);
             new Notice("Failed to fetch tools");
+            // Ensure we stop if there was an error
+            plugin.busyIndicator.end(opId);
         }
     }
 };
