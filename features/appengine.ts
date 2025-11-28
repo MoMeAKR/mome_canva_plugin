@@ -1,11 +1,11 @@
-import { Notice } from "obsidian";
+import { Notice, normalizePath, TFile } from "obsidian";
 import { API_PATHS } from "../constants";
 import { ApiService } from "../services/api-service";
 import { showToolMenu } from "../services/menu-service";
 import { getCanvasContext } from "../utils/canva-utils";
 import { createNodeAtViewportCenter } from "../utils/node-utils";
 import { IMomePlugin } from "../types";
-import { applyGraphUpdates } from "./commons";
+import { applyGraphUpdates, saveImagesByPath } from "./commons";
 
 export const AppEngine = {
     async execute(plugin: IMomePlugin) {
@@ -64,6 +64,13 @@ export const AppEngine = {
             } else {
                 new Notice(`AppEngine: ${result.message}`);
             }
+
+            if (Array.isArray(result.images) && result.images.length > 0) {
+                const saved = await saveImagesByPath(plugin.app, result.images);
+                if (saved > 0) new Notice(`Saved ${saved} image${saved !== 1 ? "s" : ""} to vault`);
+            }
+
+
         } catch (e) {
             console.error(e);
             new Notice("AppEngine Failed");
