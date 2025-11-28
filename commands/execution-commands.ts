@@ -16,6 +16,7 @@ export function registerExecutionCommands(plugin: IMomePlugin) {
 
     // --- Commands ---
     plugin.addCommand({ id: 'execute_cOdEaRtIsT', name: 'CodeArtist graph computation', callback: () => CodeArtist.execute(plugin) });
+    plugin.addCommand({ id: 'execute_cOdEaRtIsT_clean', name: 'CodeArtist clean descendents', callback: () => CodeArtist.execute_clean(plugin) });
     plugin.addCommand({ id: 'execute_AppEngine', name: 'AppEngine graph computation', callback: () => AppEngine.execute(plugin) });
     plugin.addCommand({ id: 'execute_LaToile', name: 'Execute LaToile on current canva', callback: () => LaToile.execute(plugin) });
     
@@ -60,29 +61,7 @@ export function registerExecutionCommands(plugin: IMomePlugin) {
         }
     });
 
-    // Open Heuristic Modal
-    // plugin.addCommand({
-    //     id: 'open-mome-heuristics',
-    //     name: 'Open Heuristic Function',
-    //     checkCallback: (checking) => {
-    //         const ctx = getCanvasContext(app);
-    //         if (ctx) {
-    //             if (!checking) {
-    //                 openHeuristicSelector(plugin, ctx, (heuristic: any, args: any) => {
-    //                     // Format: HeuristicName | Arg1 | Arg2 ...
-    //                     // Map args back to array based on heuristic.arguments order
-    //                     const argValues = heuristic.arguments.map((argDef: any) => args[argDef.name] ?? "");
-    //                     const content = [heuristic.name, ...argValues].join(" | ");
-                        
-    //                     createNodeAtViewportCenter(ctx.canvas, content);
-    //                     setCanvasNodeColor(ctx.canvas, "2"); // Orange
-    //                 });
-    //             }
-    //             return true;
-    //         }
-    //         return false;
-    //     }
-    // });
+
     plugin.addCommand({
     id: 'open-mome-heuristics',
     name: 'Open Heuristic Function',

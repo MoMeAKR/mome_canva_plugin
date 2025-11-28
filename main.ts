@@ -31,6 +31,7 @@ export default class mOmE_Canva extends Plugin implements IMomePlugin {
         // Pass 'this' (the plugin instance) to features so they can access settings
         this.addRibbonIcon("bolt", "Execute LaToile", () => LaToile.execute(this));
         this.addRibbonIcon("bomb", "CodeArtist Exec", () => CodeArtist.execute(this));
+        this.addRibbonIcon("apple", "CodeArtist clean descendents", () => CodeArtist.execute_clean(this));
         this.addRibbonIcon("box", "CodeArtist Tools", (evt) => CodeArtist.openTools(this, evt));
         this.addRibbonIcon("wand", "Transform tool node", () => CodeArtist.transformNode(this));
         this.addRibbonIcon("book", "LaToile Tools", (evt) => LaToile.openTools(this, evt));
@@ -47,35 +48,48 @@ export default class mOmE_Canva extends Plugin implements IMomePlugin {
         // --- Initialize Canvas Toolbar ---
         const toolbarButtons = [
             {
-                icon: 'palette',
-                tooltip: 'Change node color',
-                command: 'mome:cycle-color'
-            },
-            {
-                icon: 'copy',
-                tooltip: 'Duplicate node',
-                command: 'mome:duplicate-node'
-            },
-            {
-                icon: 'trash',
-                tooltip: 'Delete node',
-                command: 'mome:delete-node'
+                icon: "briefcase-medical", 
+                tooltip: "Open heuristics", 
+                // command: "open-mome-heuristics"
+                callback: () => {(this.app as any).commands.executeCommandById("mome_canva_plugins:open-mome-heuristics");}
             },
             {
                 icon: 'bolt',
                 tooltip: 'Execute LaToile',
-                command: 'mome:execute-latoile'
+                // command: 'execute_LaToile'
+                callback: () => LaToile.execute(this)
             },
             {
                 icon: 'bomb',
                 tooltip: 'Execute CodeArtist',
-                command: 'mome:execute-codeartist'
+                // command: 'execute_cOdEaRtIsT'
+                callback: () => CodeArtist.execute(this)
+            },
+            {
+                icon: 'apple',
+                tooltip: 'Clean CodeArtist descendents ',
+                // command: 'execute_cOdEaRtIsT'
+                callback: () => CodeArtist.execute_clean(this)
             },
             {
                 icon: 'wand',
-                tooltip: 'Transform node',
-                command: 'mome:transform-node'
+                tooltip: 'CodeArtist Transform node',
+                // command: 'update-codeartist-tool-from-string'
+                callback: () => CodeArtist.transformNode(this)
+            }, 
+            {
+                icon: 'boom-box',
+                tooltip: 'Execute Engine',
+                // command: 'update-codeartist-tool-from-string'
+                callback: () => AppEngine.execute(this)
+            },
+            {
+                icon: 'banana',
+                tooltip: 'Engine Display',
+                // command: 'update-codeartist-tool-from-string'
+                callback: () => AppEngine.display(this)
             }
+
         ];
 
         this.canvasToolbar = new CanvasToolbar(this, toolbarButtons);
