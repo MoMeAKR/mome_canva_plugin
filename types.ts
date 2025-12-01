@@ -1,3 +1,4 @@
+//types.ts
 import { Plugin } from "obsidian";
 import { CanvasToolbar } from "./features/canvasToolbar"; 
 import { BusyIndicator } from "features/busy-indicator";

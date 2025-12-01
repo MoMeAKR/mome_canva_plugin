@@ -3,6 +3,7 @@ export const API_PATHS = {
     LA_TOILE_TOOLS: '/LaToile/all_tools_heuristics',
     HEURISTICS_DESC: '/LaToile/heuristics_desc', 
     CODE_ARTIST: '/cOdEaRtIsT',
+    CODE_ARTIST_DISPLAY: '/cOdEaRtIsT/do_display',
     CODE_ARTIST_CLEAN: '/cOdEaRtIsT/clean_from_here',
     CODE_TOOLS: '/cOdEaRtIsT/get_tools',
     GET_NODE_CONTENT: '/cOdEaRtIsT/get_node_content',

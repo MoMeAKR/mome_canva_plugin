@@ -1,3 +1,5 @@
+//main.ts
+
 import { Plugin } from "obsidian";
 import { MomePluginSettings, DEFAULT_SETTINGS, IMomePlugin } from "./types";
 
@@ -47,50 +49,41 @@ export default class mOmE_Canva extends Plugin implements IMomePlugin {
 
         // --- Initialize Canvas Toolbar ---
         const toolbarButtons = [
-            {
-                icon: "briefcase-medical", 
-                tooltip: "Open heuristics", 
-                // command: "open-mome-heuristics"
-                callback: () => {(this.app as any).commands.executeCommandById("mome_canva_plugins:open-mome-heuristics");}
-            },
-            {
-                icon: 'bolt',
-                tooltip: 'Execute LaToile',
-                // command: 'execute_LaToile'
-                callback: () => LaToile.execute(this)
-            },
-            {
-                icon: 'bomb',
-                tooltip: 'Execute CodeArtist',
-                // command: 'execute_cOdEaRtIsT'
-                callback: () => CodeArtist.execute(this)
-            },
-            {
-                icon: 'apple',
-                tooltip: 'Clean CodeArtist descendents ',
-                // command: 'execute_cOdEaRtIsT'
-                callback: () => CodeArtist.execute_clean(this)
-            },
-            {
-                icon: 'wand',
-                tooltip: 'CodeArtist Transform node',
-                // command: 'update-codeartist-tool-from-string'
-                callback: () => CodeArtist.transformNode(this)
-            }, 
-            {
-                icon: 'boom-box',
-                tooltip: 'Execute Engine',
-                // command: 'update-codeartist-tool-from-string'
-                callback: () => AppEngine.execute(this)
-            },
-            {
-                icon: 'banana',
-                tooltip: 'Engine Display',
-                // command: 'update-codeartist-tool-from-string'
-                callback: () => AppEngine.display(this)
-            }
-
-        ];
+        {
+            icon: "briefcase-medical",
+            tooltip: "Heuristics",
+            submenu: [
+                { icon: "briefcase-medical", tooltip: "Open heuristics", callback: () => {(this.app as any).commands.executeCommandById("mome_canva_plugins:open-mome-heuristics");} },
+            ]
+        },
+        {
+            icon: "bolt",
+            tooltip: "LaToile",
+            submenu: [
+                { icon: "bolt", tooltip: "Execute LaToile", callback: () => LaToile.execute(this) },
+                { icon: "book", tooltip: "LaToile Tools", callback: () => LaToile.openTools(this, undefined as any) }
+            ]
+        },
+        {
+            icon: "bomb",
+            tooltip: "CodeArtist",
+            submenu: [
+                { icon: "bomb", tooltip: "Execute", callback: () => CodeArtist.execute(this) },
+                { icon: "codepen", tooltip: "Display", callback: () => CodeArtist.execute_display(this) },
+                { icon: "apple", tooltip: "Clean descendents", callback: () => CodeArtist.execute_clean(this) },
+                { icon: "wand", tooltip: "Transform node", callback: () => CodeArtist.transformNode(this) }
+            ]
+        },
+        {
+            icon: "boom-box",
+            tooltip: "Engine",
+            submenu: [
+                { icon: "boom-box", tooltip: "Execute", callback: () => AppEngine.execute(this) },
+                { icon: "banana", tooltip: "Display", callback: () => AppEngine.display(this) },
+                { icon: "binary", tooltip: "Tools", callback: () => AppEngine.openTools(this, undefined as any) }
+            ]
+        }
+    ];
 
         this.canvasToolbar = new CanvasToolbar(this, toolbarButtons);
         this.canvasToolbar.initialize();

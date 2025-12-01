@@ -1,15 +1,10 @@
-/*
+/* styles.css */
+/* Canvas Toolbar Styles (mobile-friendly) */
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
-*/
-/* Canvas Toolbar Styles */
 .mome-canvas-toolbar {
     position: absolute;
     display: flex;
+    justify-content: space-evenly;
     gap: 4px;
     padding: 6px;
     background: var(--background-secondary);
@@ -17,10 +12,13 @@ If your plugin does not need CSS, delete this file.
     border-radius: 6px;
     box-shadow: var(--shadow-s);
     z-index: 1000;
-    pointer-events: all;
+    pointer-events: auto; /* was 'all' */
 }
 
 .mome-toolbar-button {
+    flex: 1 1 0;
+    min-width: 44px;            /* larger tap target */
+    min-height: 44px;           /* larger tap target */
     padding: 6px;
     border-radius: 4px;
     background: transparent;
@@ -29,23 +27,65 @@ If your plugin does not need CSS, delete this file.
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.15s ease;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    box-sizing: border-box;
+
+    /* Touch optimizations */
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.mome-toolbar-button:hover {
-    background: var(--background-modifier-hover);
+/* Submenu container */
+.mome-toolbar-submenu {
+    position: absolute;
+    display: flex;
+    gap: 4px;
+    padding: 6px;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    box-shadow: var(--shadow-s);
+    z-index: 1001;              /* above main toolbar */
+    pointer-events: auto;
 }
 
+/* Submenu buttons use natural width */
+.mome-toolbar-submenu .mome-toolbar-button {
+    flex: 0 0 auto;
+}
+
+/* Active feedback (works on all pointers) */
 .mome-toolbar-button:active {
     background: var(--background-modifier-active);
 }
 
+/* Icon sizing and default color */
 .mome-toolbar-button svg {
     width: 16px;
     height: 16px;
     color: var(--text-muted);
 }
 
-.mome-toolbar-button:hover svg {
-    color: var(--text-normal);
+/* Limit hover styles to devices that actually have hover (mice/trackpads) */
+@media (hover: hover) and (pointer: fine) {
+    .mome-toolbar-button:hover {
+        background: var(--background-modifier-hover);
+    }
+    .mome-toolbar-button:hover svg {
+        color: var(--text-normal);
+    }
+}
+
+/* Touch-friendly spacing and feedback for coarse pointers (phones/tablets) */
+@media (hover: none) and (pointer: coarse) {
+    .mome-canvas-toolbar {
+        gap: 8px;
+        padding: 8px;
+    }
+    .mome-toolbar-button:active {
+        background: var(--background-modifier-active);
+    }
 }

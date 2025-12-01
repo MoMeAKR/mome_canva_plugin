@@ -78,9 +78,13 @@ export function registerExecutionCommands(plugin: IMomePlugin) {
                     });
                     console.log(argValues);
 
-                    const content = [heuristic.usable_name, ...argValues].join(" | ");
-                    createNodeAtViewportCenter(ctx.canvas, content);
-                    setCanvasNodeColor(ctx.canvas, "2"); // Orange
+                    const parts = [
+                        heuristic.usable_name,
+                        ...argValues.filter(v => (v ?? "").toString().trim() !== "")
+                    ];
+                    const content = parts.join(" | ");
+                    const node = createNodeAtViewportCenter(ctx.canvas, content);
+                    setCanvasNodeColor(ctx.canvas, "2", node); // Orange
                 });
             }
             return true;

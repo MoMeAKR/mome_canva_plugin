@@ -34,14 +34,14 @@ export async function copyNodeIdToClipboard(node: any): Promise<void> {
     new Notice(`Copied node id: ${node.id}`);
 }
 
-export function createNodeAtViewportCenter(canvas: Canvas, content: string) {
-    const nodeWidth = 450;
-    const nodeHeight = 250;
+export function createNodeAtViewportCenter(canvas: Canvas, content: string): any {
+    const nodeWidth = 200;
+    const nodeHeight = 80;
     const x = canvas.x - nodeWidth / 2;
     const y = canvas.y - nodeHeight / 2;
-    const id = crypto.randomUUID();
+    const id = crypto.randomUUID().replace(/-/g, '').slice(0, 10);
 
-    addNode(canvas, id, {
+    const addedNode = addNode(canvas, id, {
         x, y, width: nodeWidth, height: nodeHeight, type: "text", content,
     });
 
@@ -50,7 +50,8 @@ export function createNodeAtViewportCenter(canvas: Canvas, content: string) {
         requestAnimationFrame(() => (actualNode as any).startEditing());
         canvas.requestSave();
         new Notice("New node created at center!");
+        return actualNode;
     }
+
+    return addedNode;
 }
-
-

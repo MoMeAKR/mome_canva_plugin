@@ -49,7 +49,7 @@ export const LaToile = {
             }
         } catch (e) {
             console.error("[LaToile] Error:", e);
-            new Notice("LaToile execution failed.");
+            new Notice(`LaToile failure: ${e?.message || e}`);
         } finally {
             plugin.busyIndicator.end(opId);
         }

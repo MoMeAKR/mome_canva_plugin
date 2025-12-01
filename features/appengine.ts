@@ -35,7 +35,7 @@ export const AppEngine = {
             }
         } catch (e) {
             console.error(e);
-            new Notice("AppEngine Failed");
+            new Notice(`AppEngine failure: ${e.message || e}`);
         }
     },
 
@@ -73,7 +73,7 @@ export const AppEngine = {
 
         } catch (e) {
             console.error(e);
-            new Notice("AppEngine Failed");
+            new Notice(`AppEngine display failure: ${e.message || e}`);
         }
     },
 

@@ -35,18 +35,23 @@ export function getLastNode(canvas: Canvas) {
     return nodesArray.length > 0 ? nodesArray[nodesArray.length - 1] : null;
 }
 
-export function setCanvasNodeColor(canvas: Canvas, colorId: string | null) {
-    const selection = canvas.selection;
-    const applyColor = (node: any) => {
-        if (node.setColor) node.setColor(colorId, true);
+export function setCanvasNodeColor(canvas: Canvas, colorId: string | null, node?: CanvasNode | null) {
+    const applyColor = (n: any) => {
+        if (n?.setColor) n.setColor(colorId, true);
     };
 
-    if (selection.size === 0) {
-        const lastNode = getLastNode(canvas);
-        if (lastNode) applyColor(lastNode);
+    if (node) {
+        applyColor(node);
     } else {
-        selection.forEach(applyColor);
+        const selection = canvas.selection;
+        if (selection.size === 0) {
+            const lastNode = getLastNode(canvas);
+            if (lastNode) applyColor(lastNode);
+        } else {
+            selection.forEach(applyColor);
+        }
     }
+
     canvas.requestSave();
 }
 

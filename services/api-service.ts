@@ -1,3 +1,5 @@
+//services/api-service.ts
+
 import { Notice } from "obsidian";
 import { ToolItem } from "../types";
 import { CanvasContext } from "../utils/canva-utils";
@@ -41,14 +43,29 @@ async function post<T>(baseUrl: string, path: string, body: any): Promise<T> {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
         });
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+        if (!response.ok) {
+            // Try to extract error message from JSON body
+            let errorMsg = `HTTP error! status: ${response.status}`;
+            try {
+                const data = await response.json();
+                if (data && data.error) {
+                    errorMsg = data.error;
+                }
+            } catch (jsonErr) {
+                // Ignore JSON parse errors, keep default errorMsg
+            }
+            throw new Error(errorMsg);
+        }
+
         return await response.json();
     } catch (error) {
         console.error(error);
-        new Notice(`API Error: ${url}`);
+        // new Notice(`API Error: ${error.message || error}`);
         throw error;
     }
 }
+
 
 async function get<T>(baseUrl: string, path: string): Promise<T> {
     const url = buildUrl(baseUrl, path);
@@ -67,7 +84,9 @@ export const ApiService = {
     getTools: (baseUrl: string, path: string) => get<ToolItem[]>(baseUrl, path),
     
     sendGraphContext: async (baseUrl: string, endpoint: string, ctx: CanvasContext, nodeIds: string[] = []) => {
-        const local = false; // Force Remote for Tablet Debugging
+        // const local = false; // Force Remote for Tablet Debugging
+
+        const local = isLocalhost(baseUrl);
 
         const body: any = {
             selected_node_ids: nodeIds.length > 0 ? nodeIds : undefined
