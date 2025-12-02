@@ -71,6 +71,7 @@ export default class mOmE_Canva extends Plugin implements IMomePlugin {
             submenu: [
                 { icon: "bomb", tooltip: "Execute CodeArtist", callback: () => CodeArtist.execute(this) },
                 { icon: "codepen", tooltip: "Display Results", callback: () => CodeArtist.execute_display(this) },
+                { icon: "box", tooltip: "CodeArtist Tools", callback: (evt) => CodeArtist.openTools(this, evt) },
                 { icon: "apple", tooltip: "Clean Node Descendents", callback: () => CodeArtist.execute_clean(this) },
                 { icon: "wand", tooltip: "Transform Node", callback: () => CodeArtist.transformNode(this) }
             ]
