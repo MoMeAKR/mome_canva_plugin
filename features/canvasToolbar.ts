@@ -1,13 +1,66 @@
-import { Plugin, setIcon } from "obsidian";
+import { Plugin, setIcon, Platform, Modal, App } from "obsidian";
 import { IMomePlugin } from "../types";
 
-// Allow 'callback' OR 'command' and optional submenu
 export interface ToolbarButton {
     icon: string;
     tooltip: string;
     command?: string;
-    callback?: () => void;
+    // CHANGE 1: Update signature to accept the event
+    callback?: (evt: MouseEvent) => void;
     submenu?: ToolbarButton[];
+    submenuDirection?: 'vertical' | 'horizontal';
+}
+
+/**
+ * A Mobile-friendly modal to display submenu items
+ */
+class ToolbarMenuModal extends Modal {
+    private items: ToolbarButton[];
+    private plugin: Plugin;
+    private parentToolbar: CanvasToolbar;
+
+    constructor(app: App, plugin: Plugin, parentToolbar: CanvasToolbar, items: ToolbarButton[]) {
+        super(app);
+        this.plugin = plugin;
+        this.parentToolbar = parentToolbar;
+        this.items = items;
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        contentEl.createEl("h3", { text: "Select Action" });
+
+        const container = contentEl.createDiv();
+        container.style.display = "flex";
+        container.style.flexDirection = "column";
+
+        this.items.forEach((item) => {
+            const itemDiv = container.createDiv({ cls: "mome-mobile-menu-item" });
+            
+            // Icon
+            const iconDiv = itemDiv.createDiv({ cls: "mome-mobile-menu-icon" });
+            setIcon(iconDiv, item.icon);
+
+            // Label (Tooltip)
+            itemDiv.createDiv({ text: item.tooltip, cls: "mome-mobile-menu-label" });
+
+            // CHANGE 2: Pass the click event in the mobile modal too
+            itemDiv.onclick = (e: MouseEvent) => {
+                this.close(); 
+                
+                if (item.callback) {
+                    item.callback(e); // Pass event
+                } else if (item.command) {
+                    (this.parentToolbar as any).executeCommand(item.command);
+                }
+            };
+        });
+    }
+
+    onClose() {
+        this.contentEl.empty();
+    }
 }
 
 export class CanvasToolbar {
@@ -16,13 +69,11 @@ export class CanvasToolbar {
     private currentCanvas: any = null;
     private selectionHandler: (() => void) | null = null;
 
-    // Properties
     private selectionPollingInterval: number | null = null;
     private positionUpdateInterval: number | null = null;
     private buttons: ToolbarButton[];
     private enabled: boolean = true;
 
-    // Tracking submenus
     private activeSubmenu: { container: HTMLElement; anchor: HTMLElement } | null = null;
     private outsideClickHandler: ((ev: Event) => void) | null = null;
 
@@ -31,9 +82,6 @@ export class CanvasToolbar {
         this.buttons = buttons;
     }
 
-    /**
-     * Initialize the canvas toolbar system
-     */
     initialize() {
         this.plugin.registerEvent(
             this.plugin.app.workspace.on('active-leaf-change', (leaf) => {
@@ -47,9 +95,6 @@ export class CanvasToolbar {
         }
     }
 
-    /**
-     * Setup toolbar for a specific canvas leaf
-     */
     private setupCanvas(leaf: any) {
         this.cleanup();
 
@@ -61,18 +106,13 @@ export class CanvasToolbar {
         }
     }
 
-    /**
-     * Start polling for selection changes
-     */
     private startSelectionPolling() {
         this.stopSelectionPolling();
-
         let lastSelectionSize = 0;
         let lastSelectedNode: any = null;
 
         this.selectionPollingInterval = window.setInterval(() => {
             if (!this.currentCanvas) return;
-
             const selection = this.currentCanvas.selection;
             const currentSize = selection ? selection.size : 0;
             const currentNode = currentSize === 1 ? Array.from(selection)[0] : null;
@@ -92,9 +132,6 @@ export class CanvasToolbar {
         }
     }
 
-    /**
-     * Handle canvas selection changes
-     */
     private handleSelectionChange() {
         this.removeToolbar();
         this.closeSubmenu();
@@ -112,14 +149,16 @@ export class CanvasToolbar {
         }
     }
 
-    /**
-     * Create and display the toolbar below the selected node
-     */
+    private consumePointerEarly(el: HTMLElement) {
+        const stop = (e: Event) => {
+            e.stopPropagation();
+        };
+        el.addEventListener('pointerdown', stop);
+    }
+
     private createToolbar(node: any) {
         const toolbar = document.createElement('div');
         toolbar.className = 'mome-canvas-toolbar';
-
-        // Prevent pointerdown from bubbling to canvas when tapping gaps between buttons
         this.consumePointerEarly(toolbar);
 
         this.buttons.forEach(btn => {
@@ -134,18 +173,6 @@ export class CanvasToolbar {
         this.setupPositionUpdates(toolbar, node);
     }
 
-    /**
-     * Stop the canvas from seeing the initial pointer/touch down on controls.
-     * We only stop propagation (no preventDefault) to preserve click generation.
-     */
-    private consumePointerEarly(el: HTMLElement) {
-        const stop = (e: Event) => {
-            e.stopPropagation();
-        };
-        el.addEventListener('pointerdown', stop, { capture: true });
-        el.addEventListener('touchstart', stop, { capture: true });
-    }
-
     private createButton(config: ToolbarButton): HTMLElement {
         const button = document.createElement('button');
         button.type = 'button';
@@ -153,26 +180,32 @@ export class CanvasToolbar {
         button.setAttribute('aria-label', config.tooltip);
         setIcon(button, config.icon);
 
-        // Block pointerdown from reaching the canvas
         this.consumePointerEarly(button);
 
         if (config.submenu && config.submenu.length) {
             button.classList.add('has-submenu');
+            
             button.onclick = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (this.activeSubmenu && this.activeSubmenu.anchor === button) {
-                    this.closeSubmenu();
+                
+                if (Platform.isMobile) {
+                    new ToolbarMenuModal(this.plugin.app, this.plugin, this, config.submenu!).open();
                 } else {
-                    this.openSubmenu(button, config.submenu!);
+                    if (this.activeSubmenu && this.activeSubmenu.anchor === button) {
+                        this.closeSubmenu();
+                    } else {
+                        this.openSubmenu(button, config.submenu!);
+                    }
                 }
             };
         } else {
-            button.onclick = (e) => {
+            // CHANGE 3: Capture 'e' (MouseEvent) and pass it
+            button.onclick = (e: MouseEvent) => {
                 e.preventDefault();
                 e.stopPropagation();
                 if (config.callback) {
-                    config.callback();
+                    config.callback(e); // Pass it here!
                 } else if (config.command) {
                     this.executeCommand(config.command);
                 }
@@ -182,21 +215,36 @@ export class CanvasToolbar {
         return button;
     }
 
+    public executeCommand(commandId: string) {
+        const app = this.plugin.app as any;
+        if (app.commands.executeCommandById(commandId)) return;
+        const fullId = `${this.plugin.manifest.id}:${commandId}`;
+        if (app.commands.executeCommandById(fullId)) return;
+        console.warn(`Command not found: ${commandId}`);
+    }
+
     private createLeafButton(config: ToolbarButton): HTMLElement {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'mome-toolbar-button clickable-icon';
+        btn.className = 'mome-toolbar-button clickable-icon mome-submenu-item';
         btn.setAttribute('aria-label', config.tooltip);
+        
         setIcon(btn, config.icon);
 
-        // Block pointerdown from reaching the canvas
+        // Add text label
+        const label = document.createElement("span");
+        label.innerText = config.tooltip;
+        label.className = "mome-submenu-label";
+        btn.appendChild(label);
+
         this.consumePointerEarly(btn);
 
-        btn.onclick = (e) => {
+        // CHANGE 4: Capture 'e' (MouseEvent) and pass it
+        btn.onclick = (e: MouseEvent) => {
             e.preventDefault();
             e.stopPropagation();
             if (config.callback) {
-                config.callback();
+                config.callback(e); // Pass it here!
             } else if (config.command) {
                 this.executeCommand(config.command);
             }
@@ -206,15 +254,24 @@ export class CanvasToolbar {
         return btn;
     }
 
+    // ... (rest of the file: pickSubmenuOrientation, openSubmenu, closeSubmenu, positionSubmenu, etc. remain unchanged)
+    
+    private pickSubmenuOrientation(anchor: HTMLElement): 'vertical' | 'horizontal' {
+        return 'vertical'; // Forcing vertical as requested
+    }
+
     private openSubmenu(anchor: HTMLElement, items: ToolbarButton[]) {
         this.closeSubmenu();
 
         const submenu = document.createElement('div');
         submenu.className = 'mome-toolbar-submenu';
 
-        // Prevent pointerdown in submenu from reaching the canvas
-        this.consumePointerEarly(submenu);
+        const anchorBtnDirection = (this.buttons.find(b => b.submenu && b.submenu === items)?.submenuDirection) ?? undefined;
+        const orientation = anchorBtnDirection ?? this.pickSubmenuOrientation(anchor);
+        submenu.classList.add(orientation);
 
+        this.consumePointerEarly(submenu);
+        
         items.forEach(item => {
             const subBtn = this.createLeafButton(item);
             submenu.appendChild(subBtn);
@@ -223,6 +280,7 @@ export class CanvasToolbar {
         if (this.toolbarElement) {
             this.toolbarElement.appendChild(submenu);
         }
+
         this.activeSubmenu = { container: submenu, anchor };
         this.positionSubmenu(submenu, anchor);
         this.attachOutsideClickHandler();
@@ -246,36 +304,60 @@ export class CanvasToolbar {
         const anchorRect = anchor.getBoundingClientRect();
         const wrapperRect = this.currentCanvas.wrapperEl.getBoundingClientRect();
 
-        // Compute anchor x relative to toolbar
+        const isHorizontal = submenu.classList.contains('horizontal');
         const anchorCenterX = anchorRect.left - toolbarRect.left + (anchorRect.width / 2);
 
-        // Temporarily set to bottom; measure and clamp
-        submenu.style.left = '0px';
-        submenu.style.top = '0px';
-        submenu.style.visibility = 'hidden';
-        submenu.style.position = 'absolute';
-        submenu.style.transform = 'translateX(-50%)';
+        const margin = 6;
+        const availableBelow = Math.max(0, wrapperRect.bottom - toolbarRect.bottom - margin);
+        const availableAbove = Math.max(0, toolbarRect.top - wrapperRect.top - margin);
 
-        // Force layout
-        const submenuRect = submenu.getBoundingClientRect();
-
-        // Desired left: center under anchor
         let left = anchorCenterX;
-        // Desired top: below toolbar
-        let top = this.toolbarElement.offsetHeight + 6;
+        let top = this.toolbarElement.offsetHeight + margin;
 
-        // Clamp submenu within canvas wrapper horizontally
-        const desiredLeftOnPage = toolbarRect.left + left - submenuRect.width / 2;
-        const minLeftOnPage = wrapperRect.left + 4;
-        const maxLeftOnPage = wrapperRect.right - submenuRect.width - 4;
+        if (isHorizontal) {
+            const maxWidth = Math.min(300, wrapperRect.width - 12);
+            submenu.style.width = `${maxWidth}px`;
+            
+            submenu.style.left = '0px';
+            submenu.style.top = '0px';
+            submenu.style.visibility = 'hidden';
+            submenu.style.position = 'absolute';
+            submenu.style.transform = 'translateX(-50%)';
+            
+            const submenuRect = submenu.getBoundingClientRect();
+            
+            const desiredLeftOnPage = toolbarRect.left + left - submenuRect.width / 2;
+            const minLeftOnPage = wrapperRect.left + 4;
+            const maxLeftOnPage = wrapperRect.right - submenuRect.width - 4;
+            const clampedLeftOnPage = Math.max(minLeftOnPage, Math.min(maxLeftOnPage, desiredLeftOnPage));
+            left = clampedLeftOnPage - toolbarRect.left + submenuRect.width / 2;
 
-        const clampedLeftOnPage = Math.max(minLeftOnPage, Math.min(maxLeftOnPage, desiredLeftOnPage));
-        left = clampedLeftOnPage - toolbarRect.left + submenuRect.width / 2;
+            if (availableBelow < 60 && availableAbove > availableBelow) {
+                top = -submenuRect.height - margin;
+            }
+        } else {
+            submenu.style.width = '160px';
+            const maxHeight = Math.max(150, Math.min(300, Math.max(availableBelow, availableAbove) - 20));
+            submenu.style.maxHeight = `${maxHeight}px`;
 
-        // If submenu would overflow bottom of wrapper, place above the toolbar
-        const desiredBottomOnPage = toolbarRect.bottom + top + submenuRect.height;
-        if (desiredBottomOnPage > wrapperRect.bottom - 4) {
-            top = -submenuRect.height - 6; // show above
+            submenu.style.left = '0px';
+            submenu.style.top = '0px';
+            submenu.style.visibility = 'hidden';
+            submenu.style.position = 'absolute';
+            submenu.style.transform = 'translateX(-50%)';
+            
+            const submenuRect = submenu.getBoundingClientRect();
+            
+            const desiredLeftOnPage = toolbarRect.left + left - submenuRect.width / 2;
+            const minLeftOnPage = wrapperRect.left + 4;
+            const maxLeftOnPage = wrapperRect.right - submenuRect.width - 4;
+            const clampedLeftOnPage = Math.max(minLeftOnPage, Math.min(maxLeftOnPage, desiredLeftOnPage));
+            left = clampedLeftOnPage - toolbarRect.left + submenuRect.width / 2;
+
+            const desiredBottomOnPage = toolbarRect.bottom + top + maxHeight;
+            if (desiredBottomOnPage > wrapperRect.bottom - 4 && availableAbove > availableBelow) {
+                top = -maxHeight - margin;
+            }
         }
 
         submenu.style.left = `${left}px`;
@@ -293,29 +375,9 @@ export class CanvasToolbar {
                 this.closeSubmenu();
             }
         };
-        // Use pointerdown with capture so we detect outside taps before the canvas handles them
         document.addEventListener('pointerdown', this.outsideClickHandler as any, { capture: true });
     }
 
-    /**
-     * Execute a registered command
-     */
-    private executeCommand(commandId: string) {
-        const app = this.plugin.app as any;
-
-        // Try exact match first
-        if (app.commands.executeCommandById(commandId)) return;
-
-        // Try prepending plugin ID if not found
-        const fullId = `${this.plugin.manifest.id}:${commandId}`;
-        if (app.commands.executeCommandById(fullId)) return;
-
-        console.warn(`Command not found: ${commandId}`);
-    }
-
-    /**
-     * Position the toolbar below the selected node
-     */
     private positionToolbar(toolbar: HTMLElement, node: any) {
         const nodeRect = node.nodeEl.getBoundingClientRect();
         const canvasRect = this.currentCanvas.wrapperEl.getBoundingClientRect();
@@ -328,9 +390,6 @@ export class CanvasToolbar {
         toolbar.style.transform = 'translateX(-50%)';
     }
 
-    /**
-     * Setup listeners to update toolbar position
-     */
     private setupPositionUpdates(toolbar: HTMLElement, node: any) {
         if (this.positionUpdateInterval !== null) {
             window.clearInterval(this.positionUpdateInterval);
@@ -345,9 +404,6 @@ export class CanvasToolbar {
         }, 50);
     }
 
-    /**
-     * Remove the toolbar from DOM
-     */
     private removeToolbar() {
         if (this.toolbarElement) {
             this.toolbarElement.remove();
@@ -356,9 +412,6 @@ export class CanvasToolbar {
         this.closeSubmenu();
     }
 
-    /**
-     * Clean up all toolbar resources
-     */
     cleanup() {
         this.removeToolbar();
         this.stopSelectionPolling();

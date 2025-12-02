@@ -1,6 +1,15 @@
-/* styles.css */
-/* Canvas Toolbar Styles (mobile-friendly) */
+/* ==========================================================================
+   VARIABLES & THEME
+   ========================================================================== */
+:root {
+  --submenu-item-size: 44px;
+  --submenu-gap: 4px;
+  --submenu-padding: 6px;
+}
 
+/* ==========================================================================
+   MAIN CANVAS TOOLBAR (Floating Bar)
+   ========================================================================== */
 .mome-canvas-toolbar {
     position: absolute;
     display: flex;
@@ -12,13 +21,20 @@
     border-radius: 6px;
     box-shadow: var(--shadow-s);
     z-index: 1000;
-    pointer-events: auto; /* was 'all' */
+    pointer-events: auto;
+    
+    /* Prevent text selection */
+    user-select: none;
+    -webkit-user-select: none;
 }
 
+/* ==========================================================================
+   BUTTON STYLES (Toolbar & Submenu)
+   ========================================================================== */
 .mome-toolbar-button {
     flex: 1 1 0;
-    min-width: 44px;            /* larger tap target */
-    min-height: 44px;           /* larger tap target */
+    min-width: 44px;
+    min-height: 44px;
     padding: 6px;
     border-radius: 4px;
     background: transparent;
@@ -27,65 +43,215 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.15s ease, color 0.15s ease;
-    box-sizing: border-box;
-
-    /* Touch optimizations */
+    transition: background-color 0.15s ease;
+    
+    /* Touch optimization */
     touch-action: manipulation;
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
 }
 
-/* Submenu container */
-.mome-toolbar-submenu {
-    position: absolute;
-    display: flex;
-    gap: 4px;
-    padding: 6px;
-    background: var(--background-secondary);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 6px;
-    box-shadow: var(--shadow-s);
-    z-index: 1001;              /* above main toolbar */
-    pointer-events: auto;
-}
-
-/* Submenu buttons use natural width */
-.mome-toolbar-submenu .mome-toolbar-button {
-    flex: 0 0 auto;
-}
-
-/* Active feedback (works on all pointers) */
-.mome-toolbar-button:active {
-    background: var(--background-modifier-active);
-}
-
-/* Icon sizing and default color */
+/* Icon Sizing */
 .mome-toolbar-button svg {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     color: var(--text-muted);
+    transition: color 0.15s ease;
 }
 
-/* Limit hover styles to devices that actually have hover (mice/trackpads) */
+/* Active/Pressed State */
+.mome-toolbar-button:active,
+.mome-toolbar-button.is-active {
+    background: var(--background-modifier-active);
+    color: var(--text-normal);
+}
+
+/* Hover Effects (Desktop Only) */
 @media (hover: hover) and (pointer: fine) {
     .mome-toolbar-button:hover {
         background: var(--background-modifier-hover);
     }
+    
     .mome-toolbar-button:hover svg {
         color: var(--text-normal);
     }
 }
 
-/* Touch-friendly spacing and feedback for coarse pointers (phones/tablets) */
-@media (hover: none) and (pointer: coarse) {
-    .mome-canvas-toolbar {
-        gap: 8px;
-        padding: 8px;
-    }
-    .mome-toolbar-button:active {
-        background: var(--background-modifier-active);
-    }
+/* Visual indicator for buttons with submenus */
+.mome-toolbar-button.has-submenu {
+    position: relative;
+}
+
+.mome-toolbar-button.has-submenu::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background-color: var(--text-muted);
+    opacity: 0.5;
+}
+
+/* ==========================================================================
+   DESKTOP SUBMENU CONTAINER
+   ========================================================================== */
+.mome-toolbar-submenu {
+    position: absolute;
+    display: flex;
+    gap: var(--submenu-gap);
+    padding: var(--submenu-padding);
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    box-shadow: var(--shadow-s);
+    z-index: 1001;
+    pointer-events: auto !important;
+    box-sizing: border-box;
+    
+    /* Scroll Behavior */
+    scroll-behavior: smooth;
+    
+    /* Firefox Scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb-bg) transparent;
+}
+
+/* Submenu Buttons specifics */
+.mome-toolbar-submenu .mome-toolbar-button {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* Align content to the left */
+    gap: 8px; /* Space between icon and text */
+}
+
+/* Style the icon to ensure it doesn't shrink */
+.mome-toolbar-submenu .mome-toolbar-button svg {
+    flex-shrink: 0;
+}
+
+/* Style the text label */
+.mome-submenu-label {
+    font-size: var(--font-ui-small);
+    color: var(--text-normal);
+    
+    /* Truncation Logic */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    
+    /* Control width ("first n characters") */
+    max-width: 120px; 
+    text-align: left;
+}
+
+/* ==========================================================================
+   SUBMENU ORIENTATION LAYOUTS
+   ========================================================================== */
+
+/* Horizontal Layout */
+.mome-toolbar-submenu.horizontal {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.mome-toolbar-submenu.horizontal .mome-toolbar-button {
+    min-width: var(--submenu-item-size);
+    width: var(--submenu-item-size);
+}
+
+/* Vertical Layout */
+.mome-toolbar-submenu.vertical {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.mome-toolbar-submenu.vertical .mome-toolbar-button {
+    padding-left: 12px;
+    padding-right: 12px;
+    width: 100%;
+}
+
+.mome-toolbar-submenu.horizontal .mome-submenu-label {
+    display: none;
+}
+
+
+/* ==========================================================================
+   SCROLLBAR STYLING (Webkit/Desktop)
+   ========================================================================== */
+
+/* Track */
+.mome-toolbar-submenu::-webkit-scrollbar {
+    width: 6px;  /* Thin width for vertical */
+    height: 6px; /* Thin height for horizontal */
+}
+
+.mome-toolbar-submenu::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* Thumb (The moving part) */
+.mome-toolbar-submenu::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb-bg);
+    border-radius: 3px;
+    border: 1px solid transparent;
+    background-clip: content-box;
+}
+
+.mome-toolbar-submenu::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-active-thumb-bg);
+}
+
+/* ==========================================================================
+   MOBILE MENU MODAL ITEMS
+   ========================================================================== */
+/* These styles apply to the items inside the Obsidian Modal on Mobile */
+
+.mome-mobile-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 12px;
+    
+    /* Make it look like a card/button */
+    background-color: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    
+    cursor: pointer;
+    transition: background-color 0.1s;
+}
+
+.mome-mobile-menu-item:last-child {
+    margin-bottom: 0;
+}
+
+.mome-mobile-menu-item:active {
+    background-color: var(--background-modifier-active);
+    border-color: var(--interactive-accent);
+}
+
+.mome-mobile-menu-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+}
+
+.mome-mobile-menu-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.mome-mobile-menu-label {
+    font-size: var(--font-ui-medium);
+    font-weight: var(--font-medium);
+    color: var(--text-normal);
 }

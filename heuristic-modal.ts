@@ -142,58 +142,6 @@ class HeuristicSelectorModal extends Modal {
     }
 }
 
-// class HeuristicArgumentsModal extends Modal {
-//     private heuristic: HeuristicFunction;
-//     private onSubmit: (args: Record<string, any>) => void;
-//     private args: Record<string, any> = {};
-
-//     constructor(app: App, heuristic: HeuristicFunction, onSubmit: (args: Record<string, any>) => void) {
-//         super(app);
-//         this.heuristic = heuristic;
-//         this.onSubmit = onSubmit;
-//     }
-
-//     onOpen() {
-
-//         console.log(this.heuristic)
-
-//         const { contentEl } = this;
-//         contentEl.empty();
-//         contentEl.createEl("h2", { text: `Arguments for ${this.heuristic.name}` });
-
-//         const argsContainer = contentEl.createDiv();
-
-//         this.heuristic.arguments.forEach((argObj: any) => {
-//             const argName = argObj.name || "arg";
-//             const argType = argObj.type || "str";
-            
-//             new Setting(argsContainer)
-//                 .setName(argName)
-//                 .setDesc(`Type: ${argType}`)
-//                 .addText((text) =>
-//                     text.onChange((value) => {
-//                         this.args[argName] = value;
-//                     })
-//                 );
-//         });
-
-//         new Setting(contentEl)
-//             .addButton((btn) =>
-//                 btn
-//                     .setButtonText("Execute")
-//                     .setCta()
-//                     .onClick(() => {
-//                         this.close();
-//                         this.onSubmit(this.args);
-//                     })
-//             );
-//     }
-
-//     onClose() {
-//         this.contentEl.empty();
-//     }
-// }
-
 
 class HeuristicArgumentsModal extends Modal {
     private heuristic: HeuristicFunction;

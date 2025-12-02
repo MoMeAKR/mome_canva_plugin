@@ -1,3 +1,5 @@
+//src/utils/node-utils.ts
+
 import { Canvas, CanvasData, CanvasTextData, CanvasFileData } from "obsidian/canvas";
 import { Notice } from "obsidian";
 

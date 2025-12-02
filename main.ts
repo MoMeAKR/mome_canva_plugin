@@ -14,7 +14,7 @@ import { BusyIndicator } from "./features/busy-indicator";
 import { registerNavigationCommands } from "./commands/navigation-commands";
 import { registerColorCommands } from "./commands/color-commands";
 import { registerNodeCommands } from "./commands/node-commands";
-import { registerExecutionCommands } from "./commands/execution-commands";
+import { registerExecutionCommands, editNodeJson } from "./commands/execution-commands";
 import { registerStateModalCommands } from "./commands/state-modal-commands";
 
 
@@ -50,10 +50,11 @@ export default class mOmE_Canva extends Plugin implements IMomePlugin {
         // --- Initialize Canvas Toolbar ---
         const toolbarButtons = [
         {
-            icon: "briefcase-medical",
+            icon: "gift",
             tooltip: "Heuristics",
             submenu: [
                 { icon: "briefcase-medical", tooltip: "Open heuristics", callback: () => {(this.app as any).commands.executeCommandById("mome_canva_plugins:open-mome-heuristics");} },
+                { icon: "haze", tooltip: "Edit JSON", callback: () => editNodeJson(this)},
             ]
         },
         {
@@ -61,26 +62,27 @@ export default class mOmE_Canva extends Plugin implements IMomePlugin {
             tooltip: "LaToile",
             submenu: [
                 { icon: "bolt", tooltip: "Execute LaToile", callback: () => LaToile.execute(this) },
-                { icon: "book", tooltip: "LaToile Tools", callback: () => LaToile.openTools(this, undefined as any) }
+                { icon: "book", tooltip: "LaToile Tools", callback: (evt) => LaToile.openTools(this, evt) }
             ]
         },
         {
             icon: "bomb",
             tooltip: "CodeArtist",
             submenu: [
-                { icon: "bomb", tooltip: "Execute", callback: () => CodeArtist.execute(this) },
-                { icon: "codepen", tooltip: "Display", callback: () => CodeArtist.execute_display(this) },
-                { icon: "apple", tooltip: "Clean descendents", callback: () => CodeArtist.execute_clean(this) },
-                { icon: "wand", tooltip: "Transform node", callback: () => CodeArtist.transformNode(this) }
+                { icon: "bomb", tooltip: "Execute CodeArtist", callback: () => CodeArtist.execute(this) },
+                { icon: "codepen", tooltip: "Display Results", callback: () => CodeArtist.execute_display(this) },
+                { icon: "apple", tooltip: "Clean Node Descendents", callback: () => CodeArtist.execute_clean(this) },
+                { icon: "wand", tooltip: "Transform Node", callback: () => CodeArtist.transformNode(this) }
             ]
         },
         {
             icon: "boom-box",
             tooltip: "Engine",
             submenu: [
-                { icon: "boom-box", tooltip: "Execute", callback: () => AppEngine.execute(this) },
-                { icon: "banana", tooltip: "Display", callback: () => AppEngine.display(this) },
-                { icon: "binary", tooltip: "Tools", callback: () => AppEngine.openTools(this, undefined as any) }
+                { icon: "boom-box", tooltip: "Execute Engine", callback: () => AppEngine.execute(this) },
+                { icon: "banana", tooltip: "Display Results", callback: () => AppEngine.display(this) },
+                { icon: "binary", tooltip: "Show Tools", callback: (evt) => AppEngine.openTools(this, evt) }
+
             ]
         }
     ];
@@ -109,5 +111,4 @@ export default class mOmE_Canva extends Plugin implements IMomePlugin {
         }
     }
 }
-
 

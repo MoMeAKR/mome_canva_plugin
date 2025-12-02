@@ -1,3 +1,6 @@
+// src/commands/execution-commands.ts
+
+
 import { Plugin } from "obsidian";
 import { CodeArtist } from "../features/codeartist";
 import { LaToile } from "../features/latoile";
@@ -8,7 +11,65 @@ import { IMomePlugin } from "../types";
 import { openHeuristicSelector, extractArgNames } from "../heuristic-modal";
 import { Notice } from "obsidian";
 import { PrefixInputModal } from "../features/utils";
+import { JsonEditModal } from "../modals/json-edit-modals";
+import { findJsonFence, getSelectedOrLastTextNode, setTextNodeText } from "../utils/canva-utils";
 
+
+
+
+export function editNodeJson(plugin: IMomePlugin) {
+    const app = plugin.app;
+    const ctx = getCanvasContext(app);
+    
+    // Safety check: though toolbar only appears on canvas, command palette might not
+    if (!ctx) {
+        new Notice("No active canvas found.");
+        return;
+    }
+
+    const node = getSelectedOrLastTextNode(ctx.canvas);
+    if (!node) {
+        new Notice("Select a text node or ensure there is a last text node.");
+        return;
+    }
+
+    const text = String((node as any).text ?? "");
+
+    // Find the first ```json fenced block
+    const fence = findJsonFence(text);
+    if (!fence) {
+        new Notice("No ```json fenced block found in the node.");
+        return;
+    }
+
+    // Parse only the inner JSON
+    let parsed: any;
+    try {
+        parsed = JSON.parse(fence.inner);
+    } catch {
+        new Notice("JSON inside ```json fenced block is invalid.");
+        return;
+    }
+
+    const initial = Array.isArray(parsed)
+        ? Object.fromEntries(parsed.map((v: any, i: number) => [String(i), v]))
+        : parsed;
+
+    new JsonEditModal(plugin.app, initial, (updated) => {
+        const result = Array.isArray(parsed)
+            ? Object.keys(updated).sort((a, b) => Number(a) - Number(b)).map(k => updated[k])
+            : updated;
+
+        const pretty = JSON.stringify(result, null, 2);
+
+        // Replace only the fenced block, preserving header/closing and other text
+        const newBlock = fence.header + pretty + fence.closing;
+        const newText = text.slice(0, fence.start) + newBlock + text.slice(fence.end);
+
+        setTextNodeText(ctx.canvas, node, newText);
+        new Notice("Node JSON updated");
+    }).open();
+}
 
 
 export function registerExecutionCommands(plugin: IMomePlugin) {
@@ -31,6 +92,22 @@ export function registerExecutionCommands(plugin: IMomePlugin) {
             return false;
         }
     });
+
+    plugin.addCommand({
+        id: "edit-node-json",
+        name: "Edit JSON fields of selected node",
+        checkCallback: (checking) => {
+            const ctx = getCanvasContext(app);
+            if (!ctx) return false;
+
+            if (checking) return true;
+
+            // Call the shared function
+            editNodeJson(plugin);
+            return true;
+        }
+    });
+
 
 
     // Special "Execute Heuristic" Command (Orange + Send)
@@ -155,3 +232,5 @@ plugin.addCommand({
     });
 
 }
+
+
