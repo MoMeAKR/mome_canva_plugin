@@ -75,8 +75,11 @@ export const AppEngine = {
             }
 
             if (Array.isArray(result.images) && result.images.length > 0) {
+                new Notice("Received images"); 
                 const saved = await saveImagesByPath(plugin.app, result.images);
                 if (saved > 0) new Notice(`Saved ${saved} image${saved !== 1 ? "s" : ""} to vault`);
+            } else{
+                new Notice("No images"); 
             }
 
         } catch (e) {

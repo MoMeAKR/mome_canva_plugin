@@ -255,3 +255,64 @@
     font-weight: var(--font-medium);
     color: var(--text-normal);
 }
+
+
+/* ==========================================================================
+   Busy Indicator Styles 
+   ========================================================================== */
+
+/* Make the spinner icon actually rotate */
+.mome-busy-spinner {
+    display: flex;
+    align-items: center;
+}
+
+.mome-busy-spinner svg {
+    animation: mome-spin 1s linear infinite;
+}
+
+@keyframes mome-spin {
+    100% { transform: rotate(360deg); }
+}
+
+.mome-floating-indicator {
+    position: fixed;
+    /* Move to TOP to avoid keyboard/toolbar obstruction on phones */
+    top: 80px; 
+    bottom: unset; 
+    
+    left: 50%;
+    transform: translateX(-50%);
+    
+    /* Ultra high z-index to sit above Obsidian Mobile Interface */
+    z-index: 99999 !important; 
+    
+    background-color: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    /* Add a slight backdrop blur for modern feel */
+    backdrop-filter: blur(4px); 
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    border-radius: 50px; /* Fully rounded "Pill" shape */
+    
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--text-normal);
+    pointer-events: none;
+}
+
+/* Ensure the icon is visible */
+.mome-floating-indicator .mome-busy-spinner {
+    display: flex;
+    color: var(--text-accent); /* Make the spinner the accent color */
+}
+
+.mome-floating-indicator svg {
+    width: 18px;
+    height: 18px;
+    animation: mome-spin 1s linear infinite;
+}

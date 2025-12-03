@@ -1,30 +1,51 @@
-// features/busy-indicator.ts
-import { Plugin, setIcon } from "obsidian";
+import { Plugin, setIcon, Platform } from "obsidian";
 
 export class BusyIndicator {
     private plugin: Plugin;
-    private statusBarItem: HTMLElement | null = null;
+    private containerElement: HTMLElement | null = null;
     private activeOperations: Set<string> = new Set();
-    private iconElement: HTMLElement | null = null;
+    
+    // We keep track if we are in mobile mode for cleanup logic
+    private isMobileView: boolean;
 
     constructor(plugin: Plugin) {
         this.plugin = plugin;
-        this.createStatusBarItem();
+        this.isMobileView = Platform.isMobile; // Detect platform
+        this.initializeContainer();
     }
 
     /**
-     * Create the status bar item
+     * Initialize the container based on platform
      */
-    private createStatusBarItem() {
-        this.statusBarItem = this.plugin.addStatusBarItem();
-        this.statusBarItem.addClass('mome-busy-indicator');
-        this.statusBarItem.style.display = 'none';
+    private initializeContainer() {
+        // We force floating mode if it's mobile OR if we are on a tablet-sized window
+        // You can also simply force it ALWAYS if you prefer the floating pill style everywhere.
+        if (this.isMobileView) {
+            this.createFloatingContainer();
+        } else {
+            // Try to add to status bar
+            try {
+                this.containerElement = this.plugin.addStatusBarItem();
+                this.containerElement.addClass('mome-busy-indicator');
+                this.containerElement.style.display = 'none';
+            } catch (e) {
+                // If status bar fails (unlikely on desktop), fallback to floating
+                console.log("Status bar not available, falling back to floating");
+                this.createFloatingContainer();
+            }
+        }
+    }
+
+    private createFloatingContainer() {
+        // Append directly to body to escape any layout containers
+        this.containerElement = document.body.createEl("div", {
+            cls: "mome-floating-indicator"
+        });
+        this.containerElement.style.display = "none";
     }
 
     /**
      * Start a busy operation
-     * @param operationId Unique identifier for the operation
-     * @param label Display label (e.g., "LaToile computing...")
      */
     start(operationId: string, label: string = "Processing...") {
         this.activeOperations.add(operationId);
@@ -33,7 +54,6 @@ export class BusyIndicator {
 
     /**
      * End a busy operation
-     * @param operationId Unique identifier for the operation
      */
     end(operationId: string) {
         this.activeOperations.delete(operationId);
@@ -43,53 +63,59 @@ export class BusyIndicator {
         }
     }
 
-    /**
-     * Check if any operations are active
-     */
     isBusy(): boolean {
         return this.activeOperations.size > 0;
     }
 
     /**
-     * Update the display
+     * Update the display content
      */
     private updateDisplay(label: string) {
-        if (!this.statusBarItem) return;
+        if (!this.containerElement) return;
 
-        this.statusBarItem.empty();
+        // Clear previous content
+        this.containerElement.empty();
         
-        // Add spinner icon
-        this.iconElement = this.statusBarItem.createSpan({ cls: 'mome-busy-spinner' });
-        setIcon(this.iconElement, 'loader-2');
+        // 1. Add spinner icon
+        const iconSpan = this.containerElement.createSpan({ cls: 'mome-busy-spinner' });
+        setIcon(iconSpan, 'loader-2');
         
-        // Add label
-        this.statusBarItem.createSpan({ text: ` ${label}`, cls: 'mome-busy-label' });
+        // 2. Add label
+        this.containerElement.createSpan({ text: label, cls: 'mome-busy-label' });
         
-        this.statusBarItem.style.display = 'flex';
-        this.statusBarItem.style.alignItems = 'center';
-        this.statusBarItem.style.gap = '4px';
-    }
-
-    /**
-     * Hide the indicator
-     */
-    private hide() {
-        if (this.statusBarItem) {
-            this.statusBarItem.style.display = 'none';
+        // 3. Ensure visibility
+        // On mobile we use flex, on desktop the status bar item handles it
+        this.containerElement.style.display = 'flex';
+        
+        if (!this.isMobileView) {
+            // Specific styles for Status Bar alignment
+            this.containerElement.style.alignItems = 'center';
+            this.containerElement.style.gap = '4px';
         }
     }
 
-    /**
-     * Cleanup
-     */
+    private hide() {
+        if (this.containerElement) {
+            this.containerElement.style.display = 'none';
+        }
+    }
+
     destroy() {
         this.activeOperations.clear();
-        // Status bar items are automatically cleaned up by Obsidian
+        
+        // Important: Manual cleanup for Mobile elements
+        if (this.isMobileView && this.containerElement) {
+            this.containerElement.remove();
+        }
+        
+        // Desktop Status Bar items are automatically cleaned up by Obsidian 
+        // when the plugin unloads, but setting to null is good practice.
+        this.containerElement = null;
     }
 }
 
 /**
- * Utility function to wrap async operations with busy indicator
+ * Utility function remains the same
  */
 export async function withBusyIndicator<T>(
     indicator: BusyIndicator,
