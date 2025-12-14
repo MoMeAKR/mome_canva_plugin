@@ -7,19 +7,6 @@ import { ImagePayload } from "../features/commons";
 
 
 
-// function uint8ToBase64(u8: Uint8Array): string {
-//     let CHUNK_SIZE = 0x8000;
-//     let index = 0;
-//     let length = u8.length;
-//     let result = '';
-//     let slice;
-//     while (index < length) {
-//         slice = u8.subarray(index, Math.min(index + CHUNK_SIZE, length));
-//         result += String.fromCharCode.apply(null, Array.from(slice));
-//         index += CHUNK_SIZE;
-//     }
-//     return btoa(result);
-// }
 
 function uint8ToBase64(u8: Uint8Array): string {
     // Browser-safe base64 encoding for large arrays
@@ -85,171 +72,24 @@ async function getEmbeddedImagesFromColoredNodes(
 }
 
 
-// async function getEmbeddedImagesFromColoredNodes(
-//     vault: Vault,
-//     canvasData: any
-// ): Promise<ImagePayload[]> {
-//     const images: ImagePayload[] = [];
-//     const seen = new Set<string>();
+// async function logToMomeDebug2(vault: Vault, message: string) {
+//     try {
+//         const filename = "mome_debug2.md";
+//         const timestamp = new Date().toISOString();
+//         const logEntry = `\n---\n${timestamp}\n${message}\n`;
 
-//     const nodes = (canvasData?.nodes || []).filter(
-//         (n: any) => typeof n.color === "string" && n.color !== "0"
-//     );
-
-//     let msg = `Considering ${nodes.length} colored nodes`;
-//     // new Notice(msg);
-//     // await logToMomeDebug2(vault, msg);
-
-//     for (const node of nodes) {
-//         const text = node.text || node.label || "";
-//         const matches = [...text.matchAll(/!\[\[([^\]]+)\]\]/g)];
-//         if (matches.length > 0) {
-//             msg = `Node has ${matches.length} image embed(s)`;
-//             new Notice(msg);
-//             await logToMomeDebug2(vault, msg);
+//         const adapter = vault.adapter;
+//         if (await adapter.exists(filename)) {
+//             await adapter.append(filename, logEntry);
+//         } else {
+//             await adapter.write(filename, logEntry);
 //         }
-//         for (const match of matches) {
-//             const imgPath = match[1];
-//             if (seen.has(imgPath)) {
-//                 msg = `Already processed: ${imgPath}`;
-//                 new Notice(msg);
-//                 await logToMomeDebug2(vault, msg);
-//                 continue;
-//             }
-//             seen.add(imgPath);
-
-//             msg = `Looking for file: ${imgPath}`;
-//             new Notice(msg);
-//             await logToMomeDebug2(vault, msg);
-
-//             const file = vault.getAbstractFileByPath(imgPath);
-//             if (!file) {
-//                 msg = `File not found: ${imgPath}`;
-//                 new Notice(msg);
-//                 await logToMomeDebug2(vault, msg);
-//                 continue;
-//             }
-//             if (!(file instanceof TFile)) {
-//                 msg = `Not a file: ${imgPath}`;
-//                 new Notice(msg);
-//                 await logToMomeDebug2(vault, msg);
-//                 continue;
-//             }
-//             try {
-//                 if (typeof vault.readBinary !== "function") {
-//                     msg = "Image sync is not supported on this platform (mobile limitation).";
-//                     new Notice(msg);
-//                     await logToMomeDebug2(vault, msg);
-//                     continue;
-//                 }
-//                 msg = `Reading binary for: ${imgPath}`;
-//                 new Notice(msg);
-//                 await logToMomeDebug2(vault, msg);
-
-//                 const arrayBuffer = await vault.readBinary(file);
-
-//                 let b64: string;
-//                 if (typeof Buffer !== "undefined") {
-//                     msg = `Encoding with Buffer: ${imgPath}`;
-//                     new Notice(msg);
-//                     await logToMomeDebug2(vault, msg);
-//                     b64 = Buffer.from(arrayBuffer).toString("base64");
-//                 } else {
-//                     msg = `Encoding with uint8ToBase64: ${imgPath}`;
-//                     new Notice(msg);
-//                     await logToMomeDebug2(vault, msg);
-//                     b64 = uint8ToBase64(new Uint8Array(arrayBuffer));
-//                 }
-//                 images.push({ path: imgPath, b64_image: b64 });
-//                 msg = `Image processed: ${imgPath}`;
-//                 new Notice(msg);
-//                 await logToMomeDebug2(vault, msg);
-//             } catch (e) {
-//                 let errMsg = "Unknown error";
-//                 if (e instanceof Error) errMsg = e.message + (e.stack ? "\n" + e.stack : "");
-//                 else if (typeof e === "string") errMsg = e;
-//                 else try { errMsg = JSON.stringify(e); } catch {}
-//                 msg = `Failed to read image for embed: ${imgPath}\n${errMsg}`;
-//                 console.error("Failed to read image for embed:", imgPath, e, typeof e, e && Object.keys(e));
-//                 new Notice(msg);
-//                 await logToMomeDebug2(vault, msg);
-//             }
-//         }
+//     } catch (e) {
+//         console.error("Failed to write to mome_debug2.md:", e);
 //     }
-//     msg = `Returning ${images.length} images`;
-//     new Notice(msg);
-//     await logToMomeDebug2(vault, msg);
-
-//     return images;
-// };
+// }
 
 
-async function logToMomeDebug2(vault: Vault, message: string) {
-    try {
-        const filename = "mome_debug2.md";
-        const timestamp = new Date().toISOString();
-        const logEntry = `\n---\n${timestamp}\n${message}\n`;
-
-        const adapter = vault.adapter;
-        if (await adapter.exists(filename)) {
-            await adapter.append(filename, logEntry);
-        } else {
-            await adapter.write(filename, logEntry);
-        }
-    } catch (e) {
-        console.error("Failed to write to mome_debug2.md:", e);
-    }
-}
-
-
-
-// async function getEmbeddedImagesFromColoredNodes(
-//     vault: Vault,
-//     canvasData: any
-// ): Promise<ImagePayload[]> {
-//     const images: ImagePayload[] = [];
-//     const seen = new Set<string>();
-
-//     const nodes = (canvasData?.nodes || []).filter(
-//         (n: any) => typeof n.color === "string" && n.color !== "0"
-//     );
-
-//     new Notice(`Considering ${nodes.length} nodes`); 
-//     for (const node of nodes) {
-//         const text = node.text || node.label || "";
-//         const matches = [...text.matchAll(/!\[\[([^\]]+)\]\]/g)];
-//         for (const match of matches) {
-//             new Notice(`Found path at ${match[1]}`); 
-//             const imgPath = match[1];
-//             if (seen.has(imgPath)) continue;
-//             seen.add(imgPath);
-
-//             const file = vault.getAbstractFileByPath(imgPath);
-//             if (file instanceof TFile) {
-//                 try {
-//                     const arrayBuffer = await vault.readBinary(file);
-//                     let b64: string;
-//                     if (typeof Buffer !== "undefined") {
-//                         b64 = Buffer.from(arrayBuffer).toString("base64");
-//                     } else {
-//                         b64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-//                     }
-//                     images.push({ path: imgPath, b64_image: b64 });
-//                 } catch (e) {
-//                     let msg = "Unknown error";
-//                     if (e instanceof Error) msg = e.message;
-//                     else if (typeof e === "string") msg = e;
-//                     else try { msg = JSON.stringify(e); } catch {}
-//                     console.error("Failed to read image for embed:", imgPath, e);
-//                     new Notice(`Error image for embed: ${msg}`);
-
-//                 }
-//             }
-//         }
-//     }
-//     new Notice(`Returning ${images.length} images`); 
-//     return images;
-// }; 
 
 
 
