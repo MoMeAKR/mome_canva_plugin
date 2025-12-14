@@ -8,7 +8,7 @@ import { showToolMenu } from "../services/menu-service";
 import { getCanvasContext, setCanvasNodeColor } from "../utils/canva-utils";
 import { createNodeAtViewportCenter } from "../utils/node-utils";
 import { IMomePlugin } from "../types";
-import { applyGraphUpdates } from "./commons";
+import { applyGraphUpdates, saveImagesByPath } from "./commons";
 
 
 export const LaToile = {
@@ -24,10 +24,6 @@ export const LaToile = {
         try {
             // 2. Start the busy indicator
             plugin.busyIndicator.start(opId, "LaToile computing...");
-
-            // (Optional) Keep this if you want a toast notification too, 
-            // but the spinner usually replaces the need for "Sending context..."
-            // new Notice("LaToile: Sending context..."); 
 
             const result = await ApiService.sendGraphContext(
                 plugin.settings.baseUrl, 
@@ -49,6 +45,15 @@ export const LaToile = {
             } else {
                 if (result.message) new Notice(`LaToile: ${result.message}`);
             }
+
+            if (Array.isArray(result.images) && result.images.length > 0) {
+                new Notice("Received images"); 
+                const saved = await saveImagesByPath(plugin.app, result.images);
+                if (saved > 0) new Notice(`Saved ${saved} image${saved !== 1 ? "s" : ""} to vault`);
+            } else{
+                new Notice("No images"); 
+            }
+
         } catch (e) {
             console.error("[LaToile] Error:", e);
             new Notice(`LaToile failure: ${e?.message || e}`);
