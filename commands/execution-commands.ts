@@ -78,6 +78,7 @@ export function registerExecutionCommands(plugin: IMomePlugin) {
     // --- Commands ---
     plugin.addCommand({ id: 'execute_cOdEaRtIsT', name: 'CodeArtist graph computation', callback: () => CodeArtist.execute(plugin) });
     plugin.addCommand({ id: 'execute_cOdEaRtIsT_clean', name: 'CodeArtist clean descendents', callback: () => CodeArtist.execute_clean(plugin) });
+    plugin.addCommand({ id: 'execute_cOdEaRtIsT_tests', name: 'CodeArtist Code Test', callback: () => CodeArtist.execute_code_backend(plugin) });
     plugin.addCommand({ id: 'execute_AppEngine', name: 'AppEngine graph computation', callback: () => AppEngine.execute(plugin) });
     plugin.addCommand({ id: 'execute_LaToile', name: 'Execute LaToile on current canva', callback: () => LaToile.execute(plugin) });
     

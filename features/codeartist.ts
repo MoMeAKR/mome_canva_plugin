@@ -1,3 +1,5 @@
+//src/features/codeartist.ts
+
 import { Notice } from "obsidian";
 import { IMomePlugin } from "../types";
 import { API_PATHS } from "../constants";
@@ -7,6 +9,11 @@ import { getCanvasContext } from "../utils/canva-utils";
 import { createNodeAtViewportCenter } from "../utils/node-utils";
 import { applyGraphUpdates } from "./commons";
 import { resourceUsage } from "process";
+import { QueryModal } from "../modals/query-modal";
+
+
+
+let lastTestQuery = ""; 
 
 export const CodeArtist = {
     async execute(plugin: IMomePlugin) {
@@ -39,6 +46,43 @@ export const CodeArtist = {
 
         }
     },
+
+    async execute_code_backend(plugin: IMomePlugin) {
+        const ctx = getCanvasContext(plugin.app);
+        if (!ctx) return new Notice("No canvas found");
+
+        const ids = Array.from(ctx.canvas.selection).map((n: any) => n.id);
+
+        // Open the modal and wait for the query
+        new QueryModal(plugin.app, async (query: string) => {
+            lastTestQuery = query; // Save the last query for next time
+            try {
+                new Notice("CodeArtist: Sending context...");
+                const result = await ApiService.sendGraphContext(
+                    plugin.settings.baseUrl, 
+                    API_PATHS.CODE_ARTIST_EXECUTE, 
+                    ctx, 
+                    ids,
+                    query // Pass the query to the API service
+                );
+
+                console.log("[CodeArtist] Response:", result);
+
+                if (result.updates && result.updates.length > 0) {
+                    const changesApplied = applyGraphUpdates(ctx, result.updates);
+                    if (changesApplied > 0) {
+                        new Notice(`Applied ${changesApplied} changes`);
+                    }
+                } else {
+                    new Notice(`CodeArtist display: ${result.message}`);
+                }
+            } catch (e) {
+                console.error(e);
+                new Notice(`CodeArtist display failure: ${e.message || e}`);
+            }
+        }, lastTestQuery).open(); // Pass lastQuery as initial value
+    },
+
 
     async execute_display(plugin: IMomePlugin) {
         const ctx = getCanvasContext(plugin.app);

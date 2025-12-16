@@ -144,9 +144,9 @@ async function logDebug(ctx: CanvasContext, title: string, data: any) {
         const safeData = omitB64(data);
 
         // Log everything to console
-        const logString =
-            `=== API DEBUG ===\n${commandInfo}${imageInfo}Payload:\n${JSON.stringify(safeData, null, 2)}\n`;
-        console.log(logString);
+        // const logString =
+        //     `=== API DEBUG ===\n${commandInfo}${imageInfo}Payload:\n${JSON.stringify(safeData, null, 2)}\n`;
+        // console.log(logString);
 
         // Write to file in vault
         const vault = ctx.view?.app?.vault ?? ctx.app?.vault;
@@ -221,10 +221,16 @@ async function get<T>(baseUrl: string, path: string): Promise<T> {
 export const ApiService = {
     getTools: (baseUrl: string, path: string) => get<ToolItem[]>(baseUrl, path),
     
-    sendGraphContext: async (baseUrl: string, endpoint: string, ctx: CanvasContext) => {
+    sendGraphContext: async (baseUrl: string, endpoint: string, ctx: CanvasContext, nodeIds: string[] = [], query?:string) => {
         const local = isLocalhost(baseUrl);
 
-        const body: any = {};
+        const body: any = {
+            selected_node_ids: nodeIds.length > 0 ? nodeIds:undefined
+        };
+
+        if (query != undefined){
+            body.query = query; 
+        }
 
         if (local) {
             body.canvas_path = ctx.absolutePath;
@@ -239,12 +245,12 @@ export const ApiService = {
                 );
                 if (embeddedImages.length > 0) {
                     console.log("Sending images: ", embeddedImages.length); 
-                    new Notice(`Found ${embeddedImages.length} - API.`);
+                    // new Notice(`Found ${embeddedImages.length} - API.`);
                     body.embedded_images = embeddedImages;
                 }
                 else {
                     console.log("No images found"); 
-                    new Notice("From API - No images");
+                    // new Notice("From API - No images");
                 }
             }
         }

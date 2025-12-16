@@ -4,6 +4,7 @@ export const API_PATHS = {
     HEURISTICS_DESC: '/LaToile/heuristics_desc', 
     CODE_ARTIST: '/cOdEaRtIsT',
     CODE_ARTIST_DISPLAY: '/cOdEaRtIsT/do_display',
+    CODE_ARTIST_EXECUTE: '/cOdEaRtIsT/execute_code', 
     CODE_ARTIST_CLEAN: '/cOdEaRtIsT/clean_from_here',
     CODE_TOOLS: '/cOdEaRtIsT/get_tools',
     GET_NODE_CONTENT: '/cOdEaRtIsT/get_node_content',

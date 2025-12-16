@@ -1,4 +1,4 @@
-//main.ts
+//src/main.ts
 
 import { Plugin } from "obsidian";
 import { MomePluginSettings, DEFAULT_SETTINGS, IMomePlugin } from "./types";
@@ -33,6 +33,7 @@ export default class mOmE_Canva extends Plugin implements IMomePlugin {
         // Pass 'this' (the plugin instance) to features so they can access settings
         this.addRibbonIcon("bolt", "Execute LaToile", () => LaToile.execute(this));
         this.addRibbonIcon("bomb", "CodeArtist Exec", () => CodeArtist.execute(this));
+        this.addRibbonIcon("laugh", "CodeArtist Test Code", () => CodeArtist.execute_code_backend(this));
         this.addRibbonIcon("apple", "CodeArtist clean descendents", () => CodeArtist.execute_clean(this));
         this.addRibbonIcon("box", "CodeArtist Tools", (evt) => CodeArtist.openTools(this, evt));
         this.addRibbonIcon("wand", "Transform tool node", () => CodeArtist.transformNode(this));
@@ -71,6 +72,7 @@ export default class mOmE_Canva extends Plugin implements IMomePlugin {
             submenu: [
                 { icon: "bomb", tooltip: "Execute CodeArtist", callback: () => CodeArtist.execute(this) },
                 { icon: "codepen", tooltip: "Display Results", callback: () => CodeArtist.execute_display(this) },
+                { icon: "laugh", tooltip: "Test Code", callback: () => CodeArtist.execute_code_backend(this) },
                 { icon: "box", tooltip: "CodeArtist Tools", callback: (evt) => CodeArtist.openTools(this, evt) },
                 { icon: "apple", tooltip: "Clean Node Descendents", callback: () => CodeArtist.execute_clean(this) },
                 { icon: "wand", tooltip: "Transform Node", callback: () => CodeArtist.transformNode(this) }
