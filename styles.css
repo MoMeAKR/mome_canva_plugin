@@ -316,3 +316,208 @@
     height: 18px;
     animation: mome-spin 1s linear infinite;
 }
+
+/* ==========================================================================
+   Fullscreen Node Modal
+   ========================================================================== */
+
+.mome-fullscreen-node-modal {
+    position: fixed !important;
+    inset: 0; /* top:0 right:0 bottom:0 left:0 */
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    display: flex !important;
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    /* Make sure it is above most things */
+    z-index: 99999 !important;
+}
+
+/* Remove the default darkened backdrop & centering */
+.mome-fullscreen-node-modal .modal-bg {
+    display: none !important;
+}
+
+/* Make the modal content fill everything */
+.mome-fullscreen-node-modal .modal-content {
+    position: relative;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    background-color: var(--background-primary);
+}
+
+.mome-fullscreen-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--background-primary);
+}
+
+/* Close button top-left */
+.mome-fullscreen-close {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background-color: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.mome-fullscreen-close svg {
+    width: 18px;
+    height: 18px;
+    color: var(--text-normal);
+}
+
+/* Scrollable content area */
+.mome-fullscreen-body {
+    padding: 52px 16px 16px 16px; /* leave space for close button bar */
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+}
+
+/* Container for rendered markdown */
+.mome-fullscreen-markdown {
+    max-width: 960px;     /* keep lines readable on huge monitors */
+    margin: 0 auto;
+}
+
+/* Optional: tweak markdown text size */
+.mome-fullscreen-body.markdown-rendered {
+    font-size: var(--font-ui-medium);
+}
+
+.mome-fullscreen-textarea {
+    font-family: var(--font-monospace);
+    font-size: var(--font-text-size);
+    background-color: var(--background-primary);
+    color: var(--text-normal);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 8px;
+}
+
+/* ==========================================================================
+   TheSurgeon Modal Styling
+   ========================================================================== */
+/* Instruction label: match normal setting header styles */
+.the-surgeon-label {
+    margin-top: 8px;
+}
+
+/* "Instruction" title – small bump in weight, default size */
+.the-surgeon-label .setting-item-name {
+    font-weight: var(--font-medium);
+}
+
+/* Description – just use Obsidian-muted text */
+.the-surgeon-label .setting-item-description {
+    font-size: var(--font-ui-small);
+    color: var(--text-muted);
+}
+
+/* Textarea container: remove boxy feel, keep only spacing */
+.the-surgeon-textarea-container {
+    margin-top: 4px;
+}
+
+/* Textarea: flat, like core Obsidian editors */
+.the-surgeon-textarea-container textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: var(--font-monospace);
+    font-size: var(--font-text-size);
+    background-color: var(--background-primary);
+    color: var(--text-normal);
+
+    /* subtle border similar to inputs in Obsidian */
+    border-radius: 4px;
+    border: 1px solid var(--background-modifier-border);
+    padding: 6px 8px;
+    outline: none;
+}
+
+.the-surgeon-textarea-container textarea:focus {
+    border-color: var(--interactive-accent);
+    box-shadow: none; /* keep it flat */
+}
+
+
+.surgeon-tool-list {
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.surgeon-tool-item {
+    padding: 6px 8px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    background-color: transparent;
+}
+
+.surgeon-tool-item:hover {
+    background-color: var(--background-secondary);
+}
+
+.surgeon-tool-item.is-selected {
+    border-color: var(--interactive-accent);
+    background-color: var(--background-secondary);
+}
+
+.surgeon-tool-name {
+    font-weight: var(--font-medium);
+    font-size: var(--font-ui-small);
+}
+
+.surgeon-tool-desc {
+    font-size: var(--font-ui-small);
+    color: var(--text-muted);
+}
+.surgeon-tool-select {
+    font-size: var(--font-ui-small);
+    color: var(--text-normal);
+    background-color: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 999px; /* pill-like */
+    padding: 2px 8px;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+/* Remove strong blue focus; use subtle border color instead */
+.surgeon-tool-select:focus {
+    border-color: var(--interactive-accent);
+    box-shadow: none;
+}
+
+/* Optional: remove the default blue highlight on selected option in some browsers */
+.surgeon-tool-select option {
+    background-color: var(--background-primary);
+    color: var(--text-normal);
+}

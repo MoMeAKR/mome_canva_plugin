@@ -13,6 +13,8 @@ import { Notice } from "obsidian";
 import { PrefixInputModal } from "../features/utils";
 import { JsonEditModal } from "../modals/json-edit-modals";
 import { findJsonFence, getSelectedOrLastTextNode, setTextNodeText } from "../utils/canva-utils";
+import { FullscreenNodeModal } from "../modals/fullscreen-node-modal";
+import { TheSurgeonCanvas } from "features/thesurgeon";
 
 
 
@@ -71,6 +73,24 @@ export function editNodeJson(plugin: IMomePlugin) {
     }).open();
 }
 
+export function openNodeFullscreen(plugin: IMomePlugin) {
+    const ctx = getCanvasContext(plugin.app);
+    if (!ctx) {
+        new Notice("No active canvas found.");
+        return;
+    }
+
+    const node = getSelectedOrLastTextNode(ctx.canvas);
+    if (!node) {
+        new Notice("Select a text node or ensure there is a last text node.");
+        return;
+    }
+
+    // Open editable fullscreen modal
+    new FullscreenNodeModal(plugin.app, ctx.canvas, node).open();
+}
+
+
 
 export function registerExecutionCommands(plugin: IMomePlugin) {
     const app = plugin.app;
@@ -82,6 +102,33 @@ export function registerExecutionCommands(plugin: IMomePlugin) {
     plugin.addCommand({ id: 'execute_AppEngine', name: 'AppEngine graph computation', callback: () => AppEngine.execute(plugin) });
     plugin.addCommand({ id: 'execute_LaToile', name: 'Execute LaToile on current canva', callback: () => LaToile.execute(plugin) });
     
+
+    plugin.addCommand({
+        id: "mome-surgeon-canvas-node",
+        name: "TheSurgeon on selected canvas node (with selection)",
+        checkCallback: (checking) => {
+            const ctx = getCanvasContext(app);
+            if (!ctx) return false;
+            if (checking) return true;
+            TheSurgeonCanvas.runOnNode(plugin);
+            return true;
+        }
+    });
+
+
+    plugin.addCommand({
+    id: "mome-node-fullscreen",
+    name: "Show selected node in fullscreen",
+    checkCallback: (checking) => {
+        const ctx = getCanvasContext(app);
+        if (!ctx) return false;
+        if (checking) return true;
+        openNodeFullscreen(plugin);
+        return true;
+    }
+    });
+
+
     plugin.addCommand({
         id: 'update-codeartist-tool-from-string',
         name: 'CodeArtist Tool Transform',

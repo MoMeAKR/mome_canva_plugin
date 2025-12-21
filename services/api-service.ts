@@ -221,15 +221,27 @@ async function get<T>(baseUrl: string, path: string): Promise<T> {
 export const ApiService = {
     getTools: (baseUrl: string, path: string) => get<ToolItem[]>(baseUrl, path),
     
-    sendGraphContext: async (baseUrl: string, endpoint: string, ctx: CanvasContext, nodeIds: string[] = [], query?:string) => {
+
+    sendGraphContext: async (
+        baseUrl: string,
+        endpoint: string,
+        ctx: CanvasContext,
+        nodeIds: string[] = [],
+        query?: string,
+        extra?: Record<string, any>   ) => {
         const local = isLocalhost(baseUrl);
 
         const body: any = {
-            selected_node_ids: nodeIds.length > 0 ? nodeIds:undefined
+            selected_node_ids: nodeIds.length > 0 ? nodeIds : undefined
         };
 
-        if (query != undefined){
-            body.query = query; 
+        if (query != undefined) {
+            body.query = query;
+        }
+
+        // Merge extra kwargs into the body
+        if (extra && typeof extra === "object") {
+            Object.assign(body, extra);
         }
 
         if (local) {
@@ -244,26 +256,28 @@ export const ApiService = {
                     ctx.canvasData
                 );
                 if (embeddedImages.length > 0) {
-                    console.log("Sending images: ", embeddedImages.length); 
-                    // new Notice(`Found ${embeddedImages.length} - API.`);
+                    console.log("Sending images: ", embeddedImages.length);
                     body.embedded_images = embeddedImages;
-                }
-                else {
-                    console.log("No images found"); 
-                    // new Notice("From API - No images");
+                } else {
+                    console.log("No images found");
                 }
             }
         }
 
         await logDebug(ctx, `REQUEST: ${endpoint}`, { ...body, canvas_content: "OMITTED_LOG" });
 
-        const response = await post<{ updates?: any[], message: string, status: string }>(baseUrl, endpoint, body);
+        const response = await post<{ updates?: any[], message: string, status: string }>(
+            baseUrl,
+            endpoint,
+            body
+        );
 
         await logDebug(ctx, `RESPONSE: ${endpoint}`, response);
 
         return response;
     },
 
+  
     getLaToileTools: async (baseUrl: string, path: string, ctx: CanvasContext) => {
         const local = false; 
         const body: any = {};
@@ -301,5 +315,23 @@ export const ApiService = {
             body.relative_path = ctx.relativePath;
         }
         return post<any>(baseUrl, path, body);
-    }
+    },
+
+    getSurgeonAvailableTools: async (baseUrl: string, path: string, ctx: CanvasContext) => {
+        const local = false;
+        const body: any = {};
+
+        if (local) {
+            body.canvas_path = ctx.absolutePath;
+        } else {
+            body.relative_path = ctx.relativePath;
+        }
+
+        return post<any>(baseUrl, path, body);
+    },
+
+
+    // sendSurgeonBasic: async (baseUrl: string, path: string, body: any) => {
+    //     return post<any>(baseUrl, path, body);
+    // }
 };

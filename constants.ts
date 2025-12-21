@@ -11,6 +11,8 @@ export const API_PATHS = {
     APP_ENGINE: '/AppEngine',
     APP_ENGINE_DISPLAY: '/AppEngine/display_nodes',
     APP_ENGINE_TOOLS: '/AppEngine/get_tools',
+    SURGEON_BASIC: "/Surgeon/basic", 
+    SURGEON_AVAILABLE_TOOLS: "/Surgeon/available_tools"
 };
 
 export const CANVAS_COLORS = [

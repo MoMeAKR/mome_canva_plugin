@@ -1,6 +1,6 @@
 //src/main.ts
 
-import { Plugin } from "obsidian";
+import { Plugin, Editor, MarkdownView, Menu } from "obsidian";
 import { MomePluginSettings, DEFAULT_SETTINGS, IMomePlugin } from "./types";
 
 // Features
@@ -9,13 +9,22 @@ import { CodeArtist } from "./features/codeartist";
 import { AppEngine } from "./features/appengine";
 import { CanvasToolbar } from "features/canvasToolbar";
 import { BusyIndicator } from "./features/busy-indicator";
+import { TheSurgeonCanvas } from "./features/thesurgeon"
 
 // Command Registers
 import { registerNavigationCommands } from "./commands/navigation-commands";
 import { registerColorCommands } from "./commands/color-commands";
 import { registerNodeCommands } from "./commands/node-commands";
-import { registerExecutionCommands, editNodeJson } from "./commands/execution-commands";
+import { registerExecutionCommands, editNodeJson, openNodeFullscreen } from "./commands/execution-commands";
 import { registerStateModalCommands } from "./commands/state-modal-commands";
+
+// Menus 
+import { registerSurgeonSelectionMenu } from "./commands/surgeon-menu-commands";
+
+
+// Utils 
+import { getCanvasContext, getSelectedOrLastTextNode, getCanvasNodeTextAndSelection } from "./utils/canva-utils";
+
 
 
 export default class mOmE_Canva extends Plugin implements IMomePlugin {
@@ -48,6 +57,10 @@ export default class mOmE_Canva extends Plugin implements IMomePlugin {
         registerExecutionCommands(this);
         registerStateModalCommands(this);
 
+        // --- Register Menus --- 
+        registerSurgeonSelectionMenu(this);
+
+
         // --- Initialize Canvas Toolbar ---
         const toolbarButtons = [
         {
@@ -56,6 +69,10 @@ export default class mOmE_Canva extends Plugin implements IMomePlugin {
             submenu: [
                 { icon: "briefcase-medical", tooltip: "Open heuristics", callback: () => {(this.app as any).commands.executeCommandById("mome_canva_plugins:open-mome-heuristics");} },
                 { icon: "haze", tooltip: "Edit JSON", callback: () => editNodeJson(this)},
+                { icon: "ambulance", tooltip: "Fullscreen node", callback: () => openNodeFullscreen(this)},
+                {icon: "scissors", tooltip: "TheSurgeon (node selection)", callback: () => TheSurgeonCanvas.runOnNode(this)},
+
+
             ]
         },
         {
@@ -89,10 +106,52 @@ export default class mOmE_Canva extends Plugin implements IMomePlugin {
             ]
         }
     ];
-
         this.canvasToolbar = new CanvasToolbar(this, toolbarButtons);
         this.canvasToolbar.initialize();
+
+
+        this.registerEvent(
+            this.app.workspace.on(
+                "editor-menu",
+                (menu: Menu, editor: Editor, view: MarkdownView | any) => {
+                    // We only care when this is the editor inside a canvas text node.
+                    // Those are not regular MarkdownViews, so we check via our own canvas context.
+                    const ctx = getCanvasContext(this.app);
+                    if (!ctx) return; // Not currently in a canvas
+
+                    // Try to get the node corresponding to the active iframe/editor.
+                    // Simplest practical heuristic: use the currently selected/last text node.
+                    const node = getSelectedOrLastTextNode(ctx.canvas);
+                    if (!node) return;
+
+                    // Try to get selection info for that node.
+                    const selInfo = getCanvasNodeTextAndSelection(node);
+                    if (!selInfo || !selInfo.selectedText || selInfo.selectedText.trim() === "") {
+                        // No highlighted text → don’t show the TheSurgeon entry.
+                        return;
+                    }
+
+                    // If we reached here, we’re in a canvas context with selected text.
+                    menu.addItem((item) => {
+                        item
+                            .setTitle("TheSurgeon on selection")
+                            .setIcon("scissors")
+                            .onClick(async () => {
+                                // Delegate to the existing TheSurgeonCanvas logic,
+                                // but we can directly reuse runOnNode — it re-fetches
+                                // selection internally, which is fine.
+                                await TheSurgeonCanvas.runOnNode(this as IMomePlugin);
+                            });
+                    });
+                }
+            )
+        );
+
+   
+
     }
+
+
 
     async loadSettings() {
         this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
