@@ -86,8 +86,7 @@ export function openNodeFullscreen(plugin: IMomePlugin) {
         return;
     }
 
-    // Open editable fullscreen modal
-    new FullscreenNodeModal(plugin.app, ctx.canvas, node).open();
+    new FullscreenNodeModal(plugin.app, plugin, ctx.canvas, node, ctx.file.path).open();
 }
 
 
@@ -280,5 +279,3 @@ plugin.addCommand({
     });
 
 }
-
-

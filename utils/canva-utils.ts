@@ -6,7 +6,6 @@ import { Direction } from "../types";
 import type { EditorSelection, EditorState } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 
-import type { EditorView } from "@codemirror/view";
 
 
 
@@ -15,23 +14,41 @@ export function getCanvasNodeTextAndSelection(
 ): CanvasNodeTextSelection | null {
     const anyNode = node as any;
     const nodeEl: HTMLElement | undefined = anyNode?.nodeEl;
-    if (!nodeEl) return null;
+    console.log("[getCanvasNodeTextAndSelection] node:", anyNode);
+    console.log("[getCanvasNodeTextAndSelection] nodeEl:", nodeEl);
+
+    if (!nodeEl) {
+        console.log("[getCanvasNodeTextAndSelection] No nodeEl");
+        return null;
+    }
 
     // Locate the iframe used by the canvas node
     const iframe = nodeEl.querySelector("iframe.embed-iframe") as HTMLIFrameElement | null;
-    if (!iframe) return null;
+    console.log("[getCanvasNodeTextAndSelection] iframe:", iframe);
+    if (!iframe) {
+        console.log("[getCanvasNodeTextAndSelection] No iframe.embed-iframe inside nodeEl. nodeEl HTML:", nodeEl.outerHTML);
+        return null;
+    }
 
     const doc = iframe.contentDocument;
-    if (!doc) return null;
+    console.log("[getCanvasNodeTextAndSelection] iframe.contentDocument:", doc);
+    if (!doc) {
+        console.log("[getCanvasNodeTextAndSelection] No contentDocument on iframe");
+        return null;
+    }
 
-    // The editable content is inside .cm-content
     const contentEl = doc.querySelector(".cm-content") as HTMLElement | null;
-    if (!contentEl) return null;
+    console.log("[getCanvasNodeTextAndSelection] .cm-content:", contentEl);
+    if (!contentEl) {
+        console.log("[getCanvasNodeTextAndSelection] No .cm-content in iframe document. iframe HTML:", doc.documentElement?.outerHTML);
+        return null;
+    }
 
     const fullText = String((node as any).text ?? "");
     const selection = doc.getSelection();
+    console.log("[getCanvasNodeTextAndSelection] selection:", selection);
     if (!selection || selection.rangeCount === 0) {
-        // No actual highlight; treat as no selection
+        console.log("[getCanvasNodeTextAndSelection] No selection or rangeCount == 0");
         return {
             fullText,
             selectedText: "",
@@ -41,9 +58,14 @@ export function getCanvasNodeTextAndSelection(
     }
 
     const range = selection.getRangeAt(0);
+    console.log("[getCanvasNodeTextAndSelection] range:", range);
 
     // Ensure the selection is inside the editor content
     if (!contentEl.contains(range.startContainer) || !contentEl.contains(range.endContainer)) {
+        console.log("[getCanvasNodeTextAndSelection] Selection not inside .cm-content", {
+            startContainer: range.startContainer,
+            endContainer: range.endContainer,
+        });
         return {
             fullText,
             selectedText: "",
@@ -53,17 +75,18 @@ export function getCanvasNodeTextAndSelection(
     }
 
     const selectedText = range.toString();
+    console.log("[getCanvasNodeTextAndSelection] selectedText:", selectedText);
 
-    // For your use‑case, the text is a single line, so we can treat
-    // everything as line 0 and rely on character offsets.
     const fullVisibleText = contentEl.innerText || contentEl.textContent || "";
+    console.log("[getCanvasNodeTextAndSelection] fullVisibleText:", fullVisibleText);
 
-    // Compute start and end character positions of selection
     const beforeRange = range.cloneRange();
     beforeRange.selectNodeContents(contentEl);
     beforeRange.setEnd(range.startContainer, range.startOffset);
     const startCh = beforeRange.toString().length;
     const endCh = startCh + selectedText.length;
+
+    console.log("[getCanvasNodeTextAndSelection] offsets:", { startCh, endCh });
 
     return {
         fullText,
@@ -72,6 +95,69 @@ export function getCanvasNodeTextAndSelection(
         to: { line: 0, ch: endCh },
     };
 }
+
+// export function getCanvasNodeTextAndSelection(
+//     node: CanvasNode
+// ): CanvasNodeTextSelection | null {
+//     const anyNode = node as any;
+//     const nodeEl: HTMLElement | undefined = anyNode?.nodeEl;
+//     if (!nodeEl) return null;
+
+//     // Locate the iframe used by the canvas node
+//     const iframe = nodeEl.querySelector("iframe.embed-iframe") as HTMLIFrameElement | null;
+//     if (!iframe) return null;
+
+//     const doc = iframe.contentDocument;
+//     if (!doc) return null;
+
+//     // The editable content is inside .cm-content
+//     const contentEl = doc.querySelector(".cm-content") as HTMLElement | null;
+//     if (!contentEl) return null;
+
+//     const fullText = String((node as any).text ?? "");
+//     const selection = doc.getSelection();
+//     if (!selection || selection.rangeCount === 0) {
+//         // No actual highlight; treat as no selection
+//         return {
+//             fullText,
+//             selectedText: "",
+//             from: { line: 0, ch: 0 },
+//             to: { line: 0, ch: 0 },
+//         };
+//     }
+
+//     const range = selection.getRangeAt(0);
+
+//     // Ensure the selection is inside the editor content
+//     if (!contentEl.contains(range.startContainer) || !contentEl.contains(range.endContainer)) {
+//         return {
+//             fullText,
+//             selectedText: "",
+//             from: { line: 0, ch: 0 },
+//             to: { line: 0, ch: 0 },
+//         };
+//     }
+
+//     const selectedText = range.toString();
+
+//     // For your use‑case, the text is a single line, so we can treat
+//     // everything as line 0 and rely on character offsets.
+//     const fullVisibleText = contentEl.innerText || contentEl.textContent || "";
+
+//     // Compute start and end character positions of selection
+//     const beforeRange = range.cloneRange();
+//     beforeRange.selectNodeContents(contentEl);
+//     beforeRange.setEnd(range.startContainer, range.startOffset);
+//     const startCh = beforeRange.toString().length;
+//     const endCh = startCh + selectedText.length;
+
+//     return {
+//         fullText,
+//         selectedText,
+//         from: { line: 0, ch: startCh },
+//         to: { line: 0, ch: endCh },
+//     };
+// }
 
 
 

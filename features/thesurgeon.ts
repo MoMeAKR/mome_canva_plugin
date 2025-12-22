@@ -98,7 +98,7 @@ export const TheSurgeonCanvas = {
                     tool_id: toolId ?? undefined
                 };
 
-                new Notice(`Selected text: ${selectedText}`);
+                // new Notice(`Selected text: ${selectedText}`);
 
                 const nodeIds = [(node as any).id];
                 const opId = `surgeon-canvas-${Date.now()}`;
