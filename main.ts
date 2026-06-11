@@ -25,6 +25,9 @@ import { registerSurgeonSelectionMenu } from "./commands/surgeon-menu-commands";
 // Utils 
 import { getCanvasContext, getSelectedOrLastTextNode, getCanvasNodeTextAndSelection } from "./utils/canva-utils";
 
+// Shared 
+import { readSharedConfig } from "./shared/shared-config";
+
 
 
 export default class mOmE_Canva extends Plugin implements IMomePlugin {
@@ -35,6 +38,15 @@ export default class mOmE_Canva extends Plugin implements IMomePlugin {
     async onload() {
         console.log("=== mOmE_Canva plugin loaded ===");
         await this.loadSettings();
+
+        const shared = await readSharedConfig(this.app);
+        const sharedUrl = (shared.baseUrl ?? "").trim().replace(/\/$/, "");
+        if (sharedUrl && sharedUrl !== this.settings.baseUrl) {
+            this.settings.baseUrl = sharedUrl;
+            await this.saveSettings();
+        }
+
+
 
         this.busyIndicator = new BusyIndicator(this); 
 
