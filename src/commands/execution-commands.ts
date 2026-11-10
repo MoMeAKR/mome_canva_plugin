@@ -14,7 +14,7 @@ import { PrefixInputModal } from "../features/utils";
 import { JsonEditModal } from "../modals/json-edit-modals";
 import { findJsonFence, getSelectedOrLastTextNode, setTextNodeText } from "../utils/canva-utils";
 import { FullscreenNodeModal } from "../modals/fullscreen-node-modal";
-import { TheSurgeonCanvas } from "features/thesurgeon";
+import { TheSurgeonCanvas } from "../features/thesurgeon";
 
 
 

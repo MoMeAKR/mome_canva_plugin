@@ -1,13 +1,12 @@
 //src/main.ts
 
 import { Plugin, Editor, MarkdownView, Menu } from "obsidian";
-import { MomePluginSettings, DEFAULT_SETTINGS, IMomePlugin } from "./types";
-
+import { MomePluginSettings, DEFAULT_SETTINGS, IMomePlugin, NamedApiUrl } from "./types";
 // Features
 import { LaToile } from "./features/latoile";
 import { CodeArtist } from "./features/codeartist";
 import { AppEngine } from "./features/appengine";
-import { CanvasToolbar } from "features/canvasToolbar";
+import { CanvasToolbar } from "./features/canvasToolbar";
 import { BusyIndicator } from "./features/busy-indicator";
 import { TheSurgeonCanvas } from "./features/thesurgeon"
 
@@ -167,8 +166,23 @@ export default class mOmE_Canva extends Plugin implements IMomePlugin {
 
     async loadSettings() {
         this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-    }
 
+        if (!Array.isArray(this.settings.savedApiUrls)) {
+            this.settings.savedApiUrls = [];
+        }
+
+        this.settings.savedApiUrls = this.settings.savedApiUrls
+            .filter((entry: any): entry is NamedApiUrl =>
+                entry &&
+                typeof entry.name === "string" &&
+                typeof entry.url === "string"
+            )
+            .map((entry) => ({
+                name: entry.name.trim(),
+                url: entry.url.trim().replace(/\/$/, "")
+            }))
+            .filter((entry) => entry.name.length > 0 && entry.url.length > 0);
+    }
     async saveSettings() {
         await this.saveData(this.settings);
     }
